@@ -1,5 +1,0 @@
-GET http://localhost:5041/admin/case/3
-
-###
-
-GET http://localhost:5041/admin/client/5
