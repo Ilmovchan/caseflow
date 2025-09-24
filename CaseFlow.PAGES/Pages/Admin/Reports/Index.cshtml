@@ -1,55 +1,55 @@
 @page
 @model CaseFlow.PAGES.Pages.Admin.Reports.IndexModel
 @{
-    ViewData["Title"] = "Reports";
+    ViewData["Title"] = "Звіти";
 }
 
-<h2>Reports</h2>
+<h2>Звіти</h2>
 
 <p>
-    <a asp-page="../Index" class="btn btn-secondary">Back to Admin</a>
-    <a asp-page="/Index" class="btn btn-link">Home</a>
+    <a asp-page="../Index" class="btn btn-secondary">Назад до адміністратора</a>
+    <a asp-page="/Index" class="btn btn-link">Головна</a>
 </p>
 
 <div class="row mb-3">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">All Reports</h6>
-                <p class="card-text">@Model.AllReports.Count items</p>
-                <a asp-page="All" class="btn btn-outline-primary btn-sm">View All</a>
+                <h6 class="card-title">Всі звіти</h6>
+                <p class="card-text">@Model.AllReports.Count елементів</p>
+                <a asp-page="All" class="btn btn-outline-primary btn-sm">Переглянути всі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">Pending Approval</h6>
-                <p class="card-text">@Model.PendingReports.Count items</p>
-                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">View Pending</a>
+                <h6 class="card-title">Очікують затвердження</h6>
+                <p class="card-text">@Model.PendingReports.Count елементів</p>
+                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">Переглянути очікуючі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">By Case</h6>
-                <p class="card-text">Filter by case</p>
-                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">View by Case</a>
+                <h6 class="card-title">За справою</h6>
+                <p class="card-text">Фільтр за справою</p>
+                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">Переглянути за справою</a>
             </div>
         </div>
     </div>
 </div>
 
-<h3>Recent Reports</h3>
+<h3>Останні звіти</h3>
 <table class="table">
     <thead>
     <tr>
-        <th>Id</th>
-        <th>Case ID</th>
-        <th>Summary</th>
-        <th>Report Date</th>
-        <th>Status</th>
+        <th>ID</th>
+        <th>Справа</th>
+        <th>Резюме</th>
+        <th>Дата звіту</th>
+        <th>Статус</th>
         <th></th>
     </tr>
     </thead>
@@ -58,7 +58,7 @@
     {
         <tr>
             <td>@r.Id</td>
-            <td>@r.CaseId</td>
+            <td>@r.CaseTitle</td>
             <td>@(r.Summary.Length > 50 ? r.Summary.Substring(0, 50) + "..." : r.Summary)</td>
             <td>@r.ReportDate.ToString("yyyy-MM-dd")</td>
             <td>
@@ -67,7 +67,7 @@
                 </span>
             </td>
             <td>
-                <a asp-page="Details" asp-route-id="@r.Id">Details</a>
+                <a asp-page="Details" asp-route-id="@r.Id">Деталі</a>
             </td>
         </tr>
     }

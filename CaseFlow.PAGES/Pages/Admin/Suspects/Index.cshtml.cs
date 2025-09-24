@@ -1,19 +1,24 @@
+using AutoMapper;
+using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Services;
-using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CaseFlow.PAGES.Pages.Admin.Suspects;
 
-public class IndexModel(AdminService adminService) : PageModel
+public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 {
     private readonly AdminService _adminService = adminService;
+    private readonly IMapper _mapper = mapper;
 
-    public List<Suspect> AllSuspects { get; set; } = new();
-    public List<Suspect> PendingSuspects { get; set; } = new();
+    public List<SuspectDto> AllSuspects { get; set; } = new();
+    public List<SuspectDto> PendingSuspects { get; set; } = new();
 
     public async Task OnGetAsync()
     {
-        AllSuspects = await _adminService.GetSuspectsAsync();
-        PendingSuspects = await _adminService.GetPendingSuspectsAsync();
+        var allSuspectEntities = await _adminService.GetSuspectsAsync();
+        var pendingSuspectEntities = await _adminService.GetPendingSuspectsAsync();
+        
+        AllSuspects = _mapper.Map<List<SuspectDto>>(allSuspectEntities);
+        PendingSuspects = _mapper.Map<List<SuspectDto>>(pendingSuspectEntities);
     }
 }

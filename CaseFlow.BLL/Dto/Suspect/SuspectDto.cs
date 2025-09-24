@@ -24,4 +24,10 @@ public class SuspectDto
     public string? PriorConvictions { get; set; }
     
     public ApprovalStatus? ApprovalStatus { get; set; }
+    
+    // Computed property for full name
+    public string? FullName => 
+        !string.IsNullOrEmpty(LastName) && !string.IsNullOrEmpty(FirstName) 
+            ? $"{LastName} {FirstName}" + (FatherName != null ? $" {FatherName}" : "")
+            : null;
 }

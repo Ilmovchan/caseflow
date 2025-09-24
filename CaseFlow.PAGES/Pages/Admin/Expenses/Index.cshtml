@@ -1,56 +1,56 @@
 @page
 @model CaseFlow.PAGES.Pages.Admin.Expenses.IndexModel
 @{
-    ViewData["Title"] = "Expenses";
+    ViewData["Title"] = "Витрати";
 }
 
-<h2>Expenses</h2>
+<h2>Витрати</h2>
 
 <p>
-    <a asp-page="../Index" class="btn btn-secondary">Back to Admin</a>
-    <a asp-page="/Index" class="btn btn-link">Home</a>
+    <a asp-page="../Index" class="btn btn-secondary">Назад до адміністратора</a>
+    <a asp-page="/Index" class="btn btn-link">Головна</a>
 </p>
 
 <div class="row mb-3">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">All Expenses</h6>
-                <p class="card-text">@Model.AllExpenses.Count items</p>
-                <a asp-page="All" class="btn btn-outline-primary btn-sm">View All</a>
+                <h6 class="card-title">Всі витрати</h6>
+                <p class="card-text">@Model.AllExpenses.Count елементів</p>
+                <a asp-page="All" class="btn btn-outline-primary btn-sm">Переглянути всі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">Pending Approval</h6>
-                <p class="card-text">@Model.PendingExpenses.Count items</p>
-                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">View Pending</a>
+                <h6 class="card-title">Очікують затвердження</h6>
+                <p class="card-text">@Model.PendingExpenses.Count елементів</p>
+                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">Переглянути очікуючі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">By Case</h6>
-                <p class="card-text">Filter by case</p>
-                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">View by Case</a>
+                <h6 class="card-title">За справою</h6>
+                <p class="card-text">Фільтр за справою</p>
+                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">Переглянути за справою</a>
             </div>
         </div>
     </div>
 </div>
 
-<h3>Recent Expenses</h3>
+<h3>Останні витрати</h3>
 <table class="table">
     <thead>
     <tr>
-        <th>Id</th>
-        <th>Case ID</th>
-        <th>Purpose</th>
-        <th>Amount</th>
-        <th>Date</th>
-        <th>Status</th>
+        <th>ID</th>
+        <th>Справа</th>
+        <th>Призначення</th>
+        <th>Сума</th>
+        <th>Дата</th>
+        <th>Статус</th>
         <th></th>
     </tr>
     </thead>
@@ -59,7 +59,7 @@
     {
         <tr>
             <td>@e.Id</td>
-            <td>@e.CaseId</td>
+            <td>@e.CaseTitle</td>
             <td>@e.Purpose</td>
             <td>@e.Amount.ToString("C")</td>
             <td>@e.DateTime.ToString("yyyy-MM-dd")</td>
@@ -69,7 +69,7 @@
                 </span>
             </td>
             <td>
-                <a asp-page="Details" asp-route-id="@e.Id">Details</a>
+                <a asp-page="Details" asp-route-id="@e.Id">Деталі</a>
             </td>
         </tr>
     }

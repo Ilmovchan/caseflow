@@ -16,10 +16,18 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     #region Case
 
     public async Task<Case?> GetCaseAsync(int caseId) =>
-        await context.Cases.FindAsync(caseId);
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .FirstOrDefaultAsync(c => c.Id == caseId);
 
     public async Task<List<Case>> GetCasesAsync() =>
-        await context.Cases.ToListAsync();
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .ToListAsync();
 
     public async Task<Case> CreateCaseAsync(CreateCaseDto dto)
     {

@@ -12,4 +12,7 @@ public class ExpenseDto
     public decimal Amount { get; set; }
     public string? Annotation { get; set; }
     public ApprovalStatus? ApprovalStatus { get; set; }
+    
+    // Human-readable name for the case
+    public string CaseTitle { get; set; } = null!;
 }

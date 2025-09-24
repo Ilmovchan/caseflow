@@ -1,55 +1,55 @@
 @page
 @model CaseFlow.PAGES.Pages.Admin.Suspects.IndexModel
 @{
-    ViewData["Title"] = "Suspects";
+    ViewData["Title"] = "Підозрювані";
 }
 
-<h2>Suspects</h2>
+<h2>Підозрювані</h2>
 
 <p>
-    <a asp-page="../Index" class="btn btn-secondary">Back to Admin</a>
-    <a asp-page="/Index" class="btn btn-link">Home</a>
+    <a asp-page="../Index" class="btn btn-secondary">Назад до адміністратора</a>
+    <a asp-page="/Index" class="btn btn-link">Головна</a>
 </p>
 
 <div class="row mb-3">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">All Suspects</h6>
-                <p class="card-text">@Model.AllSuspects.Count items</p>
-                <a asp-page="All" class="btn btn-outline-primary btn-sm">View All</a>
+                <h6 class="card-title">Всі підозрювані</h6>
+                <p class="card-text">@Model.AllSuspects.Count елементів</p>
+                <a asp-page="All" class="btn btn-outline-primary btn-sm">Переглянути всі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">Pending Approval</h6>
-                <p class="card-text">@Model.PendingSuspects.Count items</p>
-                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">View Pending</a>
+                <h6 class="card-title">Очікують затвердження</h6>
+                <p class="card-text">@Model.PendingSuspects.Count елементів</p>
+                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">Переглянути очікуючі</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="card-title">By Case</h6>
-                <p class="card-text">Filter by case</p>
-                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">View by Case</a>
+                <h6 class="card-title">За справою</h6>
+                <p class="card-text">Фільтр за справою</p>
+                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">Переглянути за справою</a>
             </div>
         </div>
     </div>
 </div>
 
-<h3>Recent Suspects</h3>
+<h3>Останні підозрювані</h3>
 <table class="table">
     <thead>
     <tr>
-        <th>Id</th>
-        <th>Name</th>
-        <th>Nickname</th>
-        <th>Phone</th>
-        <th>Region</th>
+        <th>ID</th>
+        <th>Ім'я</th>
+        <th>Псевдонім</th>
+        <th>Телефон</th>
+        <th>Регіон</th>
         <th></th>
     </tr>
     </thead>
@@ -58,12 +58,12 @@
     {
         <tr>
             <td>@s.Id</td>
-            <td>@(s.LastName ?? "") @(s.FirstName ?? "")</td>
+            <td>@(s.FullName ?? "-")</td>
             <td>@(s.Nickname ?? "-")</td>
             <td>@(s.PhoneNumber ?? "-")</td>
             <td>@(s.Region ?? "-")</td>
             <td>
-                <a asp-page="Details" asp-route-id="@s.Id">Details</a>
+                <a asp-page="Details" asp-route-id="@s.Id">Деталі</a>
             </td>
         </tr>
     }

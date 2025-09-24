@@ -1,26 +1,26 @@
 @page
 @model CaseFlow.PAGES.Pages.Admin.Detectives.IndexModel
 @{
-    ViewData["Title"] = "Detectives";
+    ViewData["Title"] = "Детективи";
 }
 
-<h2>Detectives</h2>
+<h2>Детективи</h2>
 
 <p>
-    <a asp-page="Create" class="btn btn-primary">Create New Detective</a>
-    <a asp-page="../Index" class="btn btn-secondary">Back</a>
-    <a asp-page="/Index" class="btn btn-link">Home</a>
+    <a asp-page="Create" class="btn btn-primary">Створити нового детектива</a>
+    <a asp-page="../Index" class="btn btn-secondary">Назад</a>
+    <a asp-page="/Index" class="btn btn-link">Головна</a>
     </p>
 
 <table class="table">
     <thead>
     <tr>
-        <th>Id</th>
-        <th>Name</th>
-        <th>Status</th>
-        <th>Hire Date</th>
+        <th>ID</th>
+        <th>Ім'я</th>
+        <th>Статус</th>
+        <th>Дата найму</th>
         <th>Email</th>
-        <th>Phone</th>
+        <th>Телефон</th>
         <th></th>
     </tr>
     </thead>
@@ -29,15 +29,15 @@
     {
         <tr>
             <td>@d.Id</td>
-            <td>@d.LastName @d.FirstName</td>
+            <td>@d.FullName</td>
             <td>@d.Status</td>
             <td>@d.HireDate</td>
             <td>@d.Email</td>
             <td>@d.PhoneNumber</td>
             <td>
-                <a asp-page="Details" asp-route-id="@d.Id">Details</a> |
-                <a asp-page="Edit" asp-route-id="@d.Id">Edit</a> |
-                <a asp-page="Delete" asp-route-id="@d.Id">Delete</a>
+                <a asp-page="Details" asp-route-id="@d.Id">Деталі</a> |
+                <a asp-page="Edit" asp-route-id="@d.Id">Редагувати</a> |
+                <a asp-page="Delete" asp-route-id="@d.Id">Видалити</a>
             </td>
         </tr>
     }

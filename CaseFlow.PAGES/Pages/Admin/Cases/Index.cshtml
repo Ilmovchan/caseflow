@@ -34,9 +34,9 @@
             <td>@c.Id</td>
             <td>@c.Title</td>
             <td>@c.Status</td>
-            <td>@c.ClientId</td>
-            <td>@(c.DetectiveId?.ToString() ?? "-")</td>
-            <td>@c.CaseTypeId</td>
+            <td>@c.ClientFullName</td>
+            <td>@(c.DetectiveFullName ?? "-")</td>
+            <td>@c.CaseTypeName</td>
             <td>@c.StartDate</td>
             <td>@c.DeadlineDate</td>
             <td>@(c.CloseDate?.ToString() ?? "-")</td>

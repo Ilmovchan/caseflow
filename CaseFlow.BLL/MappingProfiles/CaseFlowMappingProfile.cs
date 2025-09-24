@@ -30,11 +30,22 @@ public class CaseFlowMappingProfile : Profile
         CreateMap<UpdateCaseByDetectiveDto, Case>()
             .ForMember(dest => dest.Description, opt => opt.Condition(src => src.Description != null))
             .ForMember(dest => dest.Status, opt => opt.Condition(src => src.Status.HasValue));
+
+        // Case to CaseDto mapping with navigation properties
+        CreateMap<Case, CaseDto>()
+            .ForMember(dest => dest.CaseTypeName, opt => opt.MapFrom(src => src.CaseType != null ? src.CaseType.Name : ""))
+            .ForMember(dest => dest.ClientFullName, opt => opt.MapFrom(src => src.Client != null ? 
+                $"{src.Client.LastName} {src.Client.FirstName}" + (src.Client.FatherName != null ? $" {src.Client.FatherName}" : "") : ""))
+            .ForMember(dest => dest.DetectiveFullName, opt => opt.MapFrom(src => src.Detective != null ? 
+                $"{src.Detective.LastName} {src.Detective.FirstName}" + (src.Detective.FatherName != null ? $" {src.Detective.FatherName}" : "") : null));
         
         CreateMap<CreateCaseTypeDto, CaseType>();
 
         CreateMap<UpdateCaseTypeDto, CaseType>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+        // CaseType to CaseTypeDto mapping
+        CreateMap<CaseType, CaseTypeDto>();
         
         CreateMap<CreateClientDto, Client>();
         
@@ -50,6 +61,9 @@ public class CaseFlowMappingProfile : Profile
             .ForMember(dest => dest.PhoneNumber, opt => opt.Condition(src => src.PhoneNumber != null))
             .ForMember(dest => dest.Region, opt => opt.Condition(src => src.Region != null))
             .ForMember(dest => dest.Street, opt => opt.Condition(src => src.Street != null));
+
+        // Client to ClientDto mapping
+        CreateMap<Client, ClientDto>();
 
         CreateMap<CreateDetectiveDto, Detective>();
 
@@ -67,6 +81,9 @@ public class CaseFlowMappingProfile : Profile
             .ForMember(dest => dest.ApartmentNumber, opt => opt.Condition(src => src.ApartmentNumber.HasValue))
             .ForMember(dest => dest.Salary, opt => opt.Condition(src => src.Salary.HasValue))
             .ForMember(dest => dest.PersonalNotes, opt => opt.Condition(src => src.PersonalNotes != null));
+
+        // Detective to DetectiveDto mapping
+        CreateMap<Detective, DetectiveDto>();
         
         CreateMap<CreateSuspectDto, Suspect>();
 
@@ -108,6 +125,7 @@ public class CaseFlowMappingProfile : Profile
         CreateMap<CreateReportDto, Report>();
 
         CreateMap<Report, ReportDto>()
+            .ForMember(dest => dest.CaseTitle, opt => opt.MapFrom(src => src.Case != null ? src.Case.Title : ""))
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         
         CreateMap<UpdateReportDto, Report>()
@@ -121,7 +139,7 @@ public class CaseFlowMappingProfile : Profile
             .ForMember(dest => dest.Amount, opt => opt.Condition(src => src.Amount != default))
             .ForMember(dest => dest.Annotation, opt => opt.Condition(src => src.Annotation != null))
             .ForMember(dest => dest.CaseId, opt => opt.Condition(src => src.CaseId != default))
-            .ForMember(dest => dest.ApprovalStatus, opt => opt.Condition(src => src.ApprovalStatus != null));
+            .ForMember(dest => dest.CaseTitle, opt => opt.MapFrom(src => src.Case != null ? src.Case.Title : ""));
         
         CreateMap<UpdateExpenseDto, Expense>()
             .ForMember(dest => dest.DateTime, opt => opt.Condition(src => src.DateTime != default))
@@ -132,6 +150,9 @@ public class CaseFlowMappingProfile : Profile
         CreateMap<CreateEvidenceDto, Evidence>();
 
         CreateMap<Evidence, EvidenceCaseDto>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+        CreateMap<Evidence, EvidenceDto>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
         CreateMap<Evidence?, Evidence>();
