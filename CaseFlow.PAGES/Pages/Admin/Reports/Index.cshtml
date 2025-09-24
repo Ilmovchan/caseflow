@@ -1,0 +1,75 @@
+@page
+@model CaseFlow.PAGES.Pages.Admin.Reports.IndexModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<h2>Reports</h2>
+
+<p>
+    <a asp-page="../Index" class="btn btn-secondary">Back to Admin</a>
+    <a asp-page="/Index" class="btn btn-link">Home</a>
+</p>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">All Reports</h6>
+                <p class="card-text">@Model.AllReports.Count items</p>
+                <a asp-page="All" class="btn btn-outline-primary btn-sm">View All</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Pending Approval</h6>
+                <p class="card-text">@Model.PendingReports.Count items</p>
+                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">View Pending</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">By Case</h6>
+                <p class="card-text">Filter by case</p>
+                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">View by Case</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Recent Reports</h3>
+<table class="table">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Case ID</th>
+        <th>Summary</th>
+        <th>Report Date</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var r in Model.AllReports.Take(10))
+    {
+        <tr>
+            <td>@r.Id</td>
+            <td>@r.CaseId</td>
+            <td>@(r.Summary.Length > 50 ? r.Summary.Substring(0, 50) + "..." : r.Summary)</td>
+            <td>@r.ReportDate.ToString("yyyy-MM-dd")</td>
+            <td>
+                <span class="badge bg-@(r.ApprovalStatus.ToString() == "Approved" ? "success" : r.ApprovalStatus.ToString() == "Pending" ? "warning" : "secondary")">
+                    @r.ApprovalStatus
+                </span>
+            </td>
+            <td>
+                <a asp-page="Details" asp-route-id="@r.Id">Details</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

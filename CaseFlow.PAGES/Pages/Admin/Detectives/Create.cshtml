@@ -1,0 +1,86 @@
+@page
+@model CaseFlow.PAGES.Pages.Admin.Detectives.CreateModel
+@{
+    ViewData["Title"] = "Create Detective";
+}
+
+<h2>Create Detective</h2>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label"></label>
+                <input asp-for="Input.FirstName" class="form-control" />
+                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label"></label>
+                <input asp-for="Input.LastName" class="form-control" />
+                <span asp-validation-for="Input.LastName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.FatherName" class="form-label"></label>
+                <input asp-for="Input.FatherName" class="form-control" />
+                <span asp-validation-for="Input.FatherName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                <input asp-for="Input.PhoneNumber" class="form-control" />
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.DateOfBirth" class="form-label"></label>
+                <input asp-for="Input.DateOfBirth" class="form-control" />
+                <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Region" class="form-label"></label>
+                <input asp-for="Input.Region" class="form-control" />
+                <span asp-validation-for="Input.Region" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.City" class="form-label"></label>
+                <input asp-for="Input.City" class="form-control" />
+                <span asp-validation-for="Input.City" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Street" class="form-label"></label>
+                <input asp-for="Input.Street" class="form-control" />
+                <span asp-validation-for="Input.Street" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.BuildingNumber" class="form-label"></label>
+                <input asp-for="Input.BuildingNumber" class="form-control" />
+                <span asp-validation-for="Input.BuildingNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.ApartmentNumber" class="form-label"></label>
+                <input asp-for="Input.ApartmentNumber" class="form-control" />
+                <span asp-validation-for="Input.ApartmentNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Salary" class="form-label"></label>
+                <input asp-for="Input.Salary" class="form-control" />
+                <span asp-validation-for="Input.Salary" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PersonalNotes" class="form-label"></label>
+                <textarea asp-for="Input.PersonalNotes" class="form-control"></textarea>
+                <span asp-validation-for="Input.PersonalNotes" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+

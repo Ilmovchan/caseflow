@@ -1,0 +1,39 @@
+@page
+@model CaseFlow.PAGES.Pages.Admin.CaseTypes.IndexModel
+@{
+    ViewData["Title"] = "Case Types";
+}
+
+<h2>Case Types</h2>
+
+<p>
+    <a asp-page="Create" class="btn btn-primary">Create New Case Type</a>
+    <a asp-page="../Index" class="btn btn-secondary">Back</a>
+    <a asp-page="/Index" class="btn btn-link">Home</a>
+</p>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var ct in Model.CaseTypes)
+    {
+        <tr>
+            <td>@ct.Id</td>
+            <td>@ct.Name</td>
+            <td>@ct.Price</td>
+            <td>
+                <a asp-page="Details" asp-route-id="@ct.Id">Details</a> |
+                <a asp-page="Edit" asp-route-id="@ct.Id">Edit</a> |
+                <a asp-page="Delete" asp-route-id="@ct.Id">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

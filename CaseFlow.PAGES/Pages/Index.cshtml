@@ -5,6 +5,50 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <div class="hero-section mb-5">
+        <h1 class="display-4 fw-bold mb-4">
+            <i class="fas fa-search me-3"></i>CaseFlow
+        </h1>
+        <p class="lead mb-4">Професійна система управління детективним агентством</p>
+        <p class="text mb-5">Спростите управління справами, відстежуйте докази та координуйте розслідування</p>
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+            <a class="btn btn-primary btn-lg px-4 me-md-2" asp-page="/Admin/Index">
+                <i class="fas fa-cog me-2"></i>Панель адміністратора
+            </a>
+            <a class="btn btn-outline-primary btn-lg px-4" href="#features">
+                <i class="fas fa-info-circle me-2"></i>Дізнатися більше
+            </a>
+        </div>
+    </div>
+
+    <div id="features" class="row g-4 mt-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-folder-open fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Управління справами</h5>
+                    <p class="card-text">Організуйте та відстежуйте розслідування за допомогою комплексних інструментів управління справами.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-tie fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Координація детективів</h5>
+                    <p class="card-text">Призначайте детективів до справ та ефективно керуйте їх навантаженням.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-clipboard-list fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Відстеження доказів</h5>
+                    <p class="card-text">Ведіть детальні записи доказів, підозрюваних та звітів по справах.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

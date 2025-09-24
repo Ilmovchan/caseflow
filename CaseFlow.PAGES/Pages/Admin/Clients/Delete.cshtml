@@ -1,0 +1,20 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.Clients.DeleteModel
+@{
+    ViewData["Title"] = "Delete Client";
+}
+
+<h2>Delete Client</h2>
+
+<div class="alert alert-warning">
+    Are you sure you want to delete client <strong>#@Model.Client.Id</strong> - "@Model.Client.LastName @Model.Client.FirstName"?
+</div>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    <a asp-page="Details" asp-route-id="@Model.Client.Id" class="btn btn-link">Details</a>
+    <div class="text-danger mt-2">@Model.ErrorMessage</div>
+    </form>
+

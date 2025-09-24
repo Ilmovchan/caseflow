@@ -1,5 +1,19 @@
+/* Dark Theme Variables */
+:root {
+  --bs-body-bg: #0d1117;
+  --bs-body-color: #e6edf3;
+  --bs-dark: #161b22;
+  --bs-dark-rgb: 22, 27, 34;
+  --bs-secondary: #7d8590;
+  --bs-secondary-rgb: 125, 133, 144;
+  --bs-border-color: #30363d;
+  --bs-border-color-translucent: rgba(48, 54, 61, 0.175);
+}
+
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,19 +22,206 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
   margin-bottom: 60px;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Dark Cards */
+.card {
+  background-color: #161b22;
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+}
+
+.card-body {
+  color: var(--bs-body-color);
+}
+
+.card-title {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+/* Dark Tables */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-hover-bg: rgba(48, 54, 61, 0.1);
+}
+
+.table-dark {
+  --bs-table-bg: #161b22;
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-hover-bg: rgba(48, 54, 61, 0.2);
+}
+
+/* Dark Forms */
+.form-control {
+  background-color: #0d1117;
+  border: 1px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.form-control:focus {
+  background-color: #0d1117;
+  border-color: #58a6ff;
+  color: var(--bs-body-color);
+  box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+}
+
+.form-select {
+  background-color: #0d1117;
+  border: 1px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.form-select:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+}
+
+/* Dark Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #58a6ff, #1f6feb);
+  border: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1f6feb, #58a6ff);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(31, 111, 235, 0.3);
+}
+
+.btn-secondary {
+  background-color: #21262d;
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.btn-secondary:hover {
+  background-color: #30363d;
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.btn-outline-primary {
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.btn-outline-primary:hover {
+  background-color: #58a6ff;
+  border-color: #58a6ff;
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #f85149, #da3633);
+  border: none;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #da3633, #f85149);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(248, 81, 73, 0.3);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #d29922, #bf8700);
+  border: none;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: linear-gradient(135deg, #bf8700, #d29922);
+  color: white;
+}
+
+/* Dark Alerts */
+.alert-warning {
+  background-color: rgba(212, 153, 34, 0.1);
+  border-color: #d29922;
+  color: #f0c674;
+}
+
+.alert-danger {
+  background-color: rgba(248, 81, 73, 0.1);
+  border-color: #f85149;
+  color: #ffa198;
+}
+
+/* Dark Badges */
+.badge {
+  font-weight: 500;
+  padding: 0.5em 0.75em;
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #238636, #2ea043) !important;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #d29922, #bf8700) !important;
+}
+
+.bg-secondary {
+  background: linear-gradient(135deg, #6e7681, #7d8590) !important;
+}
+
+/* Dark Navigation */
+.navbar-dark {
+  background: linear-gradient(135deg, #0d1117, #161b22) !important;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Dark Footer */
+.footer {
+  background-color: #0d1117 !important;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Focus styles */
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+}
+
+/* Form floating placeholders */
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -28,4 +229,31 @@ body {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* Page headers */
+h1, h2, h3, h4, h5, h6 {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+/* Links */
+a {
+  color: #58a6ff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #79c0ff;
+}
+
+/* Description lists */
+dt {
+  color: #7d8590;
+  font-weight: 500;
+}
+
+dd {
+  color: var(--bs-body-color);
 }

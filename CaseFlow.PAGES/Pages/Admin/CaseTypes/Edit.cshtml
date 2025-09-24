@@ -1,0 +1,26 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.CaseTypes.EditModel
+@{
+    ViewData["Title"] = "Edit Case Type";
+}
+
+<h2>Edit Case Type</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3">
+        <label asp-for="Input.Name" class="form-label"></label>
+        <input asp-for="Input.Name" class="form-control" />
+        <span asp-validation-for="Input.Name" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Price" class="form-label"></label>
+        <input asp-for="Input.Price" class="form-control" />
+        <span asp-validation-for="Input.Price" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Details</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />

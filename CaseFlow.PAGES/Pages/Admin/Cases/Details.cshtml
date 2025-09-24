@@ -1,0 +1,59 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.Cases.DetailsModel
+@{
+    ViewData["Title"] = "Case Details";
+}
+
+<h2>Case Details</h2>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">Id</dt>
+        <dd class="col-sm-10">@Model.Case.Id</dd>
+        <dt class="col-sm-2">Title</dt>
+        <dd class="col-sm-10">@Model.Case.Title</dd>
+        <dt class="col-sm-2">Status</dt>
+        <dd class="col-sm-10">@Model.Case.Status</dd>
+        <dt class="col-sm-2">ClientId</dt>
+        <dd class="col-sm-10">@Model.Case.ClientId</dd>
+        <dt class="col-sm-2">DetectiveId</dt>
+        <dd class="col-sm-10">@(Model.Case.DetectiveId?.ToString() ?? "-")</dd>
+        <dt class="col-sm-2">CaseTypeId</dt>
+        <dd class="col-sm-10">@Model.Case.CaseTypeId</dd>
+        <dt class="col-sm-2">Start</dt>
+        <dd class="col-sm-10">@Model.Case.StartDate</dd>
+        <dt class="col-sm-2">Deadline</dt>
+        <dd class="col-sm-10">@Model.Case.DeadlineDate</dd>
+        <dt class="col-sm-2">Close</dt>
+        <dd class="col-sm-10">@(Model.Case.CloseDate?.ToString() ?? "-")</dd>
+        <dt class="col-sm-2">Description</dt>
+        <dd class="col-sm-10">@Model.Case.Description</dd>
+    </dl>
+</div>
+
+<p>
+    <a asp-page="Edit" asp-route-id="@Model.Case.Id" class="btn btn-primary">Edit</a>
+    <a asp-page="Index" class="btn btn-secondary">Back to List</a>
+</p>
+
+<h3>Detective Assignment</h3>
+<div class="mb-3">
+    <form method="post" asp-page-handler="Assign">
+        <input type="hidden" name="id" value="@Model.Case.Id" />
+        <div class="input-group" style="max-width: 420px;">
+            <select name="detectiveId" class="form-select">
+                @foreach (var d in Model.UnassignedDetectives)
+                {
+                    <option value="@d.Id">#@d.Id @d.LastName @d.FirstName</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-outline-primary">Assign</button>
+        </div>
+    </form>
+</div>
+
+<form method="post" asp-page-handler="Dismiss">
+    <input type="hidden" name="id" value="@Model.Case.Id" />
+    <button type="submit" class="btn btn-outline-warning" @(Model.Case.DetectiveId == null ? "disabled" : null)>Dismiss Detective</button>
+</form>
+
