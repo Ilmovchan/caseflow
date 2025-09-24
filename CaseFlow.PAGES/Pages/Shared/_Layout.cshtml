@@ -7,12 +7,15 @@
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/dark-theme.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/modern-enhancements.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/admin-panel.css" asp-append-version="true"/>
     <link rel="stylesheet" href="~/CaseFlow.PAGES.styles.css" asp-append-version="true"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 </head>
 <body>
 <header>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom mb-3">
+    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark border-bottom mb-3">
         <div class="container">
             <a class="navbar-brand fw-bold" asp-area="" asp-page="/Index">
                 <i class="fas fa-search me-2"></i>CaseFlow
@@ -24,12 +27,12 @@
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
                     <li class="nav-item">
-                        <a class="nav-link text-light" asp-area="" asp-page="/Index">
+                        <a class="nav-link" asp-area="" asp-page="/Index">
                             <i class="fas fa-home me-1"></i>Головна
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-light" asp-area="" asp-page="/Admin/Index">
+                        <a class="nav-link" asp-area="" asp-page="/Admin/Index">
                             <i class="fas fa-cog me-1"></i>Панель адміністратора
                         </a>
                     </li>
@@ -44,9 +47,9 @@
     </main>
 </div>
 
-<footer class="border-top footer text-muted bg-dark text-light">
+<footer class="border-top footer text-muted">
     <div class="container">
-        &copy; 2025 - CaseFlow - <a asp-area="" asp-page="/Privacy" class="text-light">Конфіденційність</a>
+        &copy; 2025 - CaseFlow - <a asp-area="" asp-page="/Privacy">Конфіденційність</a>
     </div>
 </footer>
 

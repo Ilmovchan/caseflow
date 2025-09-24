@@ -1,0 +1,273 @@
+/* Admin Panel Enhancements */
+
+/* Hero Section Styling */
+.hero-section {
+    background: linear-gradient(135deg, var(--dark-bg-secondary) 0%, var(--dark-bg-tertiary) 100%);
+    border-radius: 20px;
+    padding: 4rem 2rem;
+    margin: 2rem 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--dark-shadow-xl);
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(88, 166, 255, 0.1) 0%, transparent 70%);
+    animation: float 8s ease-in-out infinite;
+}
+
+.hero-section h1 {
+    background: linear-gradient(135deg, var(--dark-text-accent), #7c3aed, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.hero-section .lead {
+    font-size: 1.25rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* Admin Icon Wrapper */
+.admin-icon-wrapper {
+    position: relative;
+    display: inline-block;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(124, 58, 237, 0.1));
+    border-radius: 50%;
+    border: 2px solid rgba(88, 166, 255, 0.3);
+    backdrop-filter: blur(10px);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.admin-icon-wrapper i {
+    position: relative;
+    z-index: 2;
+}
+
+/* Admin Cards */
+.admin-card {
+    border-radius: 16px !important;
+    border: 1px solid var(--dark-border-primary) !important;
+    background: var(--dark-bg-card) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--dark-text-accent), #7c3aed, #ec4899);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.admin-card:hover::before {
+    opacity: 1;
+}
+
+.admin-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-color: var(--dark-text-accent) !important;
+}
+
+/* Card Icon Wrapper */
+.card-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(124, 58, 237, 0.1));
+    border-radius: 20px;
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.admin-card:hover .card-icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.2), rgba(124, 58, 237, 0.2));
+    border-color: var(--dark-text-accent);
+}
+
+.card-icon-wrapper i {
+    transition: all 0.3s ease;
+}
+
+.admin-card:hover .card-icon-wrapper i {
+    transform: scale(1.1);
+    color: var(--dark-text-accent) !important;
+}
+
+/* Card Content */
+.admin-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark-text-primary) !important;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.admin-card .card-text {
+    color: var(--dark-text-secondary) !important;
+    text-align: center;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Card Buttons */
+.admin-card .btn {
+    border-radius: 12px !important;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.admin-card .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.admin-card .btn:hover::before {
+    left: 100%;
+}
+
+.admin-card .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(88, 166, 255, 0.3);
+}
+
+/* Grid Layout */
+.row.g-4 {
+    margin: 0 -0.75rem;
+}
+
+.row.g-4 > [class*="col-"] {
+    padding: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1rem;
+        margin: 1rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+    
+    .admin-icon-wrapper {
+        padding: 1rem;
+    }
+    
+    .card-icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .admin-card .card-title {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 1.5rem 0.5rem;
+    }
+    
+    .hero-section h1 {
+        font-size: 1.75rem;
+    }
+    
+    .admin-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animations */
+@keyframes float {
+    0%, 100% { 
+        transform: translate(0, 0) rotate(0deg); 
+    }
+    33% { 
+        transform: translate(30px, -30px) rotate(120deg); 
+    }
+    66% { 
+        transform: translate(-20px, 20px) rotate(240deg); 
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(88, 166, 255, 0);
+    }
+}
+
+/* Loading State */
+.admin-card.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.admin-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Focus States for Accessibility */
+.admin-card:focus-within {
+    outline: 2px solid var(--dark-text-accent);
+    outline-offset: 4px;
+}
+
+.admin-card .btn:focus {
+    outline: 2px solid white;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.3);
+}
