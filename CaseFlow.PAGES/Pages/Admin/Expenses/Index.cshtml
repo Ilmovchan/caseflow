@@ -4,78 +4,105 @@
     ViewData["Title"] = "Витрати";
 }
 
-<h2>Витрати</h2>
-
-<p>
-    <a asp-page="../Index" class="btn btn-secondary">Назад до адміністратора</a>
-    <a asp-page="/Index" class="btn btn-link">Головна</a>
-</p>
-
-<div class="row mb-3">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title">Всі витрати</h6>
-                <p class="card-text">@Model.AllExpenses.Count елементів</p>
-                <a asp-page="All" class="btn btn-outline-primary btn-sm">Переглянути всі</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title">Очікують затвердження</h6>
-                <p class="card-text">@Model.PendingExpenses.Count елементів</p>
-                <a asp-page="Pending" class="btn btn-outline-warning btn-sm">Переглянути очікуючі</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title">За справою</h6>
-                <p class="card-text">Фільтр за справою</p>
-                <a asp-page="ByCase" class="btn btn-outline-info btn-sm">Переглянути за справою</a>
-            </div>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Витрати</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary filter-btn" data-table="expenses-table">
+            <i class="fas fa-filter me-1"></i>Фільтр
+        </button>
+        <a asp-page="Create" class="btn btn-primary">Створити нову витрату</a>
     </div>
 </div>
 
-<h3>Останні витрати</h3>
-<table class="table sortable-table">
+<p>
+    <a asp-page="../Index" class="btn btn-secondary">Назад</a>
+    <a asp-page="/Index" class="btn btn-link">Головна</a>
+</p>
+
+<table id="expenses-table" class="table sortable-table paginated-table">
     <thead>
     <tr>
-        <th>ID</th>
-        <th>Справа</th>
-        <th>Призначення</th>
-        <th>Сума</th>
-        <th>Дата</th>
-        <th>Статус</th>
-        <th></th>
+        <th class="text-center">ID</th>
+        <th class="text-center">Справа</th>
+        <th class="text-center">Призначення</th>
+        <th class="text-center">Сума</th>
+        <th class="text-center">Дата</th>
+        <th class="text-center">Статус</th>
+        <th class="text-center">Дії</th>
     </tr>
     </thead>
     <tbody>
-    @foreach (var e in Model.AllExpenses.Take(10))
+    @foreach (var e in Model.AllExpenses)
     {
-        <tr>
+        <tr class="clickable-row" data-href="@Url.Page("Details", new { id = e.Id })">
             <td>@e.Id</td>
             <td>@e.CaseTitle</td>
             <td>@e.Purpose</td>
             <td>@e.Amount.ToString("C")</td>
             <td>@e.DateTime.ToString("yyyy-MM-dd")</td>
             <td>
-                <span class="badge bg-@(e.ApprovalStatus.ToString() == "Approved" ? "success" : e.ApprovalStatus.ToString() == "Pending" ? "warning" : "secondary")">
-                    @e.ApprovalStatus
+                <span class="badge bg-@(e.ApprovalStatus.ToString() == "Approved" ? "success" : e.ApprovalStatus.ToString() == "Pending" ? "warning" : e.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary") approval-status" data-id="@e.Id" data-status="@e.ApprovalStatus">
+                    @(e.ApprovalStatus.ToString() == "Approved" ? "Схвалено" : e.ApprovalStatus.ToString() == "Pending" ? "Очікує" : e.ApprovalStatus.ToString() == "Declined" ? "Відхилено" : "Чернетка")
                 </span>
             </td>
-            <td>
-                <a asp-page="Details" asp-route-id="@e.Id">Деталі</a>
+            <td class="approval-actions">
+                @if (e.ApprovalStatus.ToString() == "Pending")
+                {
+                    <button class="btn btn-sm btn-approve" data-id="@e.Id" data-type="expense">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-reject" data-id="@e.Id" data-type="expense">
+                        <i class="fas fa-times"></i>
+                    </button>
+                }
+                else
+                {
+                    <span class="text-muted">Оброблено</span>
+                }
             </td>
         </tr>
     }
     </tbody>
 </table>
 
+<!-- Server-side Pagination -->
+@if (Model.PagedExpenses.TotalPages > 1)
+{
+    <nav aria-label="Expenses pagination" class="mt-3">
+        <ul class="pagination justify-content-center">
+            @if (Model.PagedExpenses.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage - 1)">Попередня</a>
+                </li>
+            }
+            
+            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.PagedExpenses.TotalPages, Model.CurrentPage + 2); i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="?pageNumber=@i">@i</a>
+                </li>
+            }
+            
+            @if (Model.PagedExpenses.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage + 1)">Наступна</a>
+                </li>
+            }
+        </ul>
+    </nav>
+    
+    <div class="text-center text-muted">
+        Показано @((Model.CurrentPage - 1) * Model.PageSize + 1)-@(Math.Min(Model.CurrentPage * Model.PageSize, Model.PagedExpenses.TotalCount)) з @Model.PagedExpenses.TotalCount записів
+    </div>
+}
+
+<div class="mb-5"></div>
+
 @section Scripts {
     <script src="~/js/table-sorting.js"></script>
+    <script src="~/js/table-filters.js"></script>
+    <script src="~/js/table-pagination.js"></script>
+    <script src="~/js/approval-system.js"></script>
 }

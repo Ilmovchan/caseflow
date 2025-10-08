@@ -23,7 +23,6 @@ public class SuspectDto
     public string? PhysicalDescription { get; set; }
     public string? PriorConvictions { get; set; }
     
-    public ApprovalStatus? ApprovalStatus { get; set; }
     
     // Computed property for full name
     public string? FullName => 

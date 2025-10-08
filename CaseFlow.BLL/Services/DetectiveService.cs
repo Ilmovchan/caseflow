@@ -67,7 +67,6 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
         var result = mapper.Map<EvidenceCaseDto>(evidenceEntity);
         result.CaseId = caseId;
-        result.ApprovalStatus = ApprovalStatus.Draft;
         return result;
     }
 
@@ -105,8 +104,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
+                Purpose = ce.Evidence.Purpose
             })
             .FirstOrDefaultAsync();
 
@@ -121,8 +119,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
+                Purpose = ce.Evidence.Purpose
             })
             .ToListAsync();
 
@@ -138,27 +135,56 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
+                Purpose = ce.Evidence.Purpose
             })
             .ToListAsync();
 
     public async Task<List<EvidenceCaseDto>> GetApprovedEvidencesAsync() =>
         await context.CaseEvidences
             .Where(ce => ce.ApprovalStatus == ApprovalStatus.Approved)
-            .Select(ce => mapper.Map<EvidenceCaseDto>(ce.Evidence))
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose
+            })
             .ToListAsync();
 
     public async Task<List<EvidenceCaseDto>> GetDeclinedEvidencesAsync() =>
         await context.CaseEvidences
             .Where(ce => ce.ApprovalStatus == ApprovalStatus.Declined)
-            .Select(ce => mapper.Map<EvidenceCaseDto>(ce.Evidence))
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose
+            })
             .ToListAsync();
 
     public async Task<List<EvidenceCaseDto>> GetPendingEvidencesAsync() =>
         await context.CaseEvidences
             .Where(ce => ce.ApprovalStatus == ApprovalStatus.Pending)
-            .Select(ce => mapper.Map<EvidenceCaseDto>(ce.Evidence))
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose
+            })
             .ToListAsync();
 
     public async Task LinkEvidenceToCaseAsync(int evidenceId, int caseId)
@@ -202,7 +228,6 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
         var result = mapper.Map<SuspectDto>(suspect);
         result.CaseId = caseId;
-        result.ApprovalStatus = ApprovalStatus.Draft;
         return result;
     }
 

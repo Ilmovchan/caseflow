@@ -1,4 +1,5 @@
 using AutoMapper;
+using CaseFlow.BLL.Dto.Auth;
 using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.CaseType;
 using CaseFlow.BLL.Dto.Client;
@@ -164,5 +165,8 @@ public class CaseFlowMappingProfile : Profile
             .ForMember(dest => dest.Region, opt => opt.Condition(src => src.Region != null))
             .ForMember(dest => dest.Annotation, opt => opt.Condition(src => src.Annotation != null))
             .ForMember(dest => dest.Purpose, opt => opt.Condition(src => src.Purpose != null));
+        
+        // Authentication mappings
+        CreateMap<User, UserDto>();
     }
 }

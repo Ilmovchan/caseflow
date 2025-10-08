@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CaseFlow.DAL.Enums;
 
 namespace CaseFlow.DAL.Models;
 
@@ -62,6 +63,7 @@ public class Suspect
 
     [Column("prior_convictions")]
     public string? PriorConvictions { get; set; }
+
 
     public ICollection<CaseSuspect> CaseSuspects { get; set; } = new List<CaseSuspect>();
 }

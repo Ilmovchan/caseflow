@@ -4,153 +4,149 @@
     ViewData["Title"] = "Панель адміністратора";
 }
 
-<!-- Hero Section -->
-<div class="hero-section text-center mb-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center justify-content-center mb-4">
-                    <div class="admin-icon-wrapper">
-                        <i class="fas fa-shield-alt fa-3x text-primary"></i>
+<!-- Hero Header -->
+<div class="admin-hero-section mb-5 text-center position-relative">
+    <div class="floating-bg"></div>
+
+    <div class="admin-hero-icon mx-auto mb-4">
+        <i class="fas fa-shield-alt"></i>
+    </div>
+
+    <h1 class="admin-hero-title fw-bold mb-3">CaseFlow Admin Panel</h1>
+    <p class="admin-hero-subtitle mb-0">Система управління детективним агентством</p>
+</div>
+
+
+<!-- Admin Dashboard -->
+<div class="admin-dashboard">
+
+    <!-- Section 1: Клієнти і детективи -->
+    <div class="dashboard-section mb-5">
+        <h2 class="section-title mb-4">Основне управління</h2>
+        <div class="row g-3">
+            <div class="col-lg-6 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-users"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Клієнти</h3>
+                        <p class="card-description">Управління інформацією про клієнтів</p>
+                        <a asp-page="Clients/Index" class="card-action">
+                            <span>Перейти до клієнтів</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
-                <h1 class="display-4 fw-bold mb-3">Система управління</h1>
-                <p class="lead text-muted">Керуйте справами, клієнтами та детективами в одному місці</p>
+            </div>
+            <div class="col-lg-6 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-user-tie"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Детективи</h3>
+                        <p class="card-description">Керування профілями детективів</p>
+                        <a asp-page="Detectives/Index" class="card-action">
+                            <span>Перейти до детективів</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Справи, Докази, Підозрювані, Витрати, Звіти -->
+    <div class="dashboard-section mb-5">
+        <h2 class="section-title mb-4">Робота з матеріалами справ</h2>
+        <div class="row g-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-folder-open"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Справи</h3>
+                        <p class="card-description">Керування справами та призначення детективів</p>
+                        <a asp-page="Cases/Index" class="card-action">
+                            <span>Перейти до справ</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-fingerprint"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Докази</h3>
+                        <p class="card-description">Перегляд та керування доказами</p>
+                        <a asp-page="Evidence/Index" class="card-action">
+                            <span>Керувати доказами</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-user-secret"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Підозрювані</h3>
+                        <p class="card-description">Інформація про підозрюваних</p>
+                        <a asp-page="Suspects/Index" class="card-action">
+                            <span>Переглянути</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-dollar-sign"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Витрати</h3>
+                        <p class="card-description">Затвердження витрат по справах</p>
+                        <a asp-page="Expenses/Index" class="card-action">
+                            <span>Керувати</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card">
+                    <div class="card-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Звіти</h3>
+                        <p class="card-description">Перегляд та затвердження звітів по справах</p>
+                        <a asp-page="Reports/Index" class="card-action">
+                            <span>Перейти до звітів</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Типи справ -->
+    <div class="dashboard-section">
+        <h2 class="section-title mb-4">Налаштування системи</h2>
+        <div class="row justify-content-start">
+            <div class="col-lg-4 col-md-6">
+                <div class="admin-panel-card compact">
+                    <div class="card-icon"><i class="fas fa-tags"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Типи справ</h3>
+                        <p class="card-description">Налаштування типів справ і тарифів</p>
+                        <a asp-page="CaseTypes/Index" class="card-action">
+                            <span>Керувати</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Management Cards -->
-<div class="row g-4">
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-folder-open fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Справи</h5>
-                <p class="card-text flex-grow-1">Керуйте справами, призначайте детективів та відстежуйте статус справ.</p>
-                <div class="mt-auto">
-                    <a asp-page="Cases/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати справами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-users fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Клієнти</h5>
-                <p class="card-text flex-grow-1">Керуйте інформацією про клієнтів та контактними даними.</p>
-                <div class="mt-auto">
-                    <a asp-page="Clients/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати клієнтами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-user-tie fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Детективи</h5>
-                <p class="card-text flex-grow-1">Керуйте профілями детективів та призначеннями.</p>
-                <div class="mt-auto">
-                    <a asp-page="Detectives/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати детективами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-tags fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Типи справ</h5>
-                <p class="card-text flex-grow-1">Керуйте типами справ та ціноутворенням.</p>
-                <div class="mt-auto">
-                    <a asp-page="CaseTypes/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати типами справ
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-fingerprint fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Докази</h5>
-                <p class="card-text flex-grow-1">Переглядайте та керуйте доказами.</p>
-                <div class="mt-auto">
-                    <a asp-page="Evidence/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати доказами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-user-secret fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Підозрювані</h5>
-                <p class="card-text flex-grow-1">Переглядайте та керуйте інформацією про підозрюваних.</p>
-                <div class="mt-auto">
-                    <a asp-page="Suspects/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати підозрюваними
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-dollar-sign fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Витрати</h5>
-                <p class="card-text flex-grow-1">Переглядайте та затверджуйте витрати по справах.</p>
-                <div class="mt-auto">
-                    <a asp-page="Expenses/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати витратами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 admin-card">
-            <div class="card-body d-flex flex-column">
-                <div class="card-icon-wrapper mb-3">
-                    <i class="fas fa-file-alt fa-3x text-primary"></i>
-                </div>
-                <h5 class="card-title mb-3">Звіти</h5>
-                <p class="card-text flex-grow-1">Переглядайте та затверджуйте звіти по справах.</p>
-                <div class="mt-auto">
-                    <a asp-page="Reports/Index" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>Керувати звітами
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
 

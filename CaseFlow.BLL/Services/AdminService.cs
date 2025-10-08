@@ -2,6 +2,7 @@ using AutoMapper;
 using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.CaseType;
 using CaseFlow.BLL.Dto.Client;
+using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Dto.Detective;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.DAL.Data;
@@ -28,6 +29,27 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
             .Include(c => c.Client)
             .Include(c => c.Detective)
             .ToListAsync();
+
+    public async Task<PagedResult<Case>> GetCasesPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Cases.CountAsync();
+        var items = await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .OrderBy(c => c.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Case>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
 
     public async Task<Case> CreateCaseAsync(CreateCaseDto dto)
     {
@@ -83,6 +105,24 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Client>> GetClientsAsync() =>
         await context.Clients.ToListAsync();
 
+    public async Task<PagedResult<Client>> GetClientsPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Clients.CountAsync();
+        var items = await context.Clients
+            .OrderBy(c => c.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Client>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<Client> CreateClientAsync(CreateClientDto dto)
     {
         var clientEntity = mapper.Map<Client>(dto);
@@ -127,6 +167,24 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<List<Detective>> GetDetectivesAsync() =>
         await context.Detectives.ToListAsync();
+
+    public async Task<PagedResult<Detective>> GetDetectivesPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Detectives.CountAsync();
+        var items = await context.Detectives
+            .OrderBy(d => d.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Detective>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
 
     public async Task<List<Detective>> GetUnassignedDetectivesAsync() =>
         await context.Detectives
@@ -207,6 +265,24 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Evidence>> GetEvidencesAsync() =>
         await context.Evidences.ToListAsync();
 
+    public async Task<PagedResult<Evidence>> GetEvidencesPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Evidences.CountAsync();
+        var items = await context.Evidences
+            .OrderBy(e => e.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Evidence>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<Evidence>> GetEvidencesFromCaseAsync(int caseId) =>
         await context.CaseEvidences.Where(ce => ce.CaseId == caseId).Select(ce => ce.Evidence).ToListAsync();
 
@@ -215,6 +291,9 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
             .Where(ce => ce.ApprovalStatus == ApprovalStatus.Pending)
             .Select(ce => ce.Evidence)
             .ToListAsync();
+
+    // Evidence approval methods removed - Evidence entity no longer has ApprovalStatus
+    // Approval status is managed through CaseEvidence junction table
 
     #endregion
 
@@ -226,6 +305,24 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Suspect>> GetSuspectsAsync() =>
         await context.Suspects.ToListAsync();
 
+    public async Task<PagedResult<Suspect>> GetSuspectsPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Suspects.CountAsync();
+        var items = await context.Suspects
+            .OrderBy(s => s.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Suspect>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<Suspect>> GetSuspectsFromCaseAsync(int caseId) =>
         await context.CaseSuspects.Where(cs => cs.CaseId == caseId).Select(cs => cs.Suspect).ToListAsync();
 
@@ -234,6 +331,9 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
             .Where(cs => cs.ApprovalStatus == ApprovalStatus.Pending)
             .Select(cs => cs.Suspect)
             .ToListAsync();
+
+    // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
+    // Approval status is managed through CaseSuspect junction table
 
     #endregion
 
@@ -245,11 +345,51 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Expense>> GetExpensesAsync() =>
         await context.Expenses.ToListAsync();
 
+    public async Task<PagedResult<Expense>> GetExpensesPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Expenses.CountAsync();
+        var items = await context.Expenses
+            .OrderBy(e => e.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Expense>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<Expense>> GetExpensesFromCaseAsync(int caseId) =>
         await context.Expenses.Where(e => e.CaseId == caseId).ToListAsync();
 
     public async Task<List<Expense>> GetPendingExpensesAsync() =>
         await context.Expenses.Where(e => e.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
+
+    public async Task<Expense> ApproveExpenseAsync(int expenseId)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+                     ?? throw new EntityNotFoundException("Expense", expenseId);
+        
+        expense.ApprovalStatus = ApprovalStatus.Approved;
+        await context.SaveChangesAsync();
+        
+        return expense;
+    }
+
+    public async Task<Expense> RejectExpenseAsync(int expenseId)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+                     ?? throw new EntityNotFoundException("Expense", expenseId);
+        
+        expense.ApprovalStatus = ApprovalStatus.Declined;
+        await context.SaveChangesAsync();
+        
+        return expense;
+    }
 
     #endregion
 
@@ -261,11 +401,51 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Report>> GetReportsAsync() =>
         await context.Reports.ToListAsync();
 
+    public async Task<PagedResult<Report>> GetReportsPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.Reports.CountAsync();
+        var items = await context.Reports
+            .OrderBy(r => r.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Report>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<Report>> GetReportsFromCaseAsync(int caseId) =>
         await context.Reports.Where(r => r.CaseId == caseId).ToListAsync();
 
     public async Task<List<Report>> GetPendingReportsAsync() =>
         await context.Reports.Where(r => r.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
+
+    public async Task<Report> ApproveReportAsync(int reportId)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+                    ?? throw new EntityNotFoundException("Report", reportId);
+        
+        report.ApprovalStatus = ApprovalStatus.Approved;
+        await context.SaveChangesAsync();
+        
+        return report;
+    }
+
+    public async Task<Report> RejectReportAsync(int reportId)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+                    ?? throw new EntityNotFoundException("Report", reportId);
+        
+        report.ApprovalStatus = ApprovalStatus.Declined;
+        await context.SaveChangesAsync();
+        
+        return report;
+    }
 
     #endregion
 
@@ -276,6 +456,24 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<List<CaseType>> GetCaseTypesAsync() =>
         await context.CaseTypes.ToListAsync();
+
+    public async Task<PagedResult<CaseType>> GetCaseTypesPagedAsync(int pageNumber = 1, int pageSize = 15)
+    {
+        var totalCount = await context.CaseTypes.CountAsync();
+        var items = await context.CaseTypes
+            .OrderBy(ct => ct.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<CaseType>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
 
     public async Task<CaseType> CreateCaseTypeAsync(CreateCaseTypeDto dto)
     {

@@ -37,6 +37,8 @@ public partial class DetectiveAgencyDbContext : DbContext
 
     public virtual DbSet<Suspect> Suspects { get; set; }
 
+    public virtual DbSet<User> Users { get; set; }
+
     #endregion
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -319,6 +321,33 @@ public partial class DetectiveAgencyDbContext : DbContext
                 
                 t.HasCheckConstraint("weight_height_format", 
                     @"weight IS NOT NULL AND weight > 0 AND height IS NOT NULL AND height > 0 OR weight IS NULL AND height IS NULL");
+            });
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.Username).IsUnique();
+            entity.HasIndex(e => e.Email).IsUnique();
+
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("username_format", 
+                    @"username ~ '^[a-zA-Z0-9_]+$'");
+                
+                t.HasCheckConstraint("email_format", 
+                    @"email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'");
+                
+                t.HasCheckConstraint("role_format", 
+                    @"role IN ('Admin', 'Detective')");
+                
+                t.HasCheckConstraint("created_at_format", 
+                    @"created_at <= CURRENT_TIMESTAMP");
+                
+                t.HasCheckConstraint("last_login_at_format", 
+                    @"last_login_at IS NULL OR last_login_at <= CURRENT_TIMESTAMP");
             });
         });
 

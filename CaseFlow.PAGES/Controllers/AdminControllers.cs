@@ -206,6 +206,9 @@ public class AdminEvidenceController(AdminService service) : ControllerBase
     [HttpGet("pending")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingEvidencesAsync());
+
+    // Evidence approval methods removed - Evidence entity no longer has ApprovalStatus
+    // Approval status is managed through CaseEvidence junction table
 }
 
 // ---------------- SUSPECT ----------------
@@ -235,6 +238,9 @@ public class AdminSuspectController(AdminService service) : ControllerBase
     [HttpGet("pending")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingSuspectsAsync());
+
+    // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
+    // Approval status is managed through CaseSuspect junction table
 }
 
 // ---------------- EXPENSE ----------------
@@ -264,6 +270,24 @@ public class AdminExpenseController(AdminService service) : ControllerBase
     [HttpGet("pending")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingExpensesAsync());
+
+    [HttpPost("{id:int}/approve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Approve(int id)
+    {
+        var approved = await service.ApproveExpenseAsync(id);
+        return Ok(approved);
+    }
+
+    [HttpPost("{id:int}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reject(int id)
+    {
+        var rejected = await service.RejectExpenseAsync(id);
+        return Ok(rejected);
+    }
 }
 
 // ---------------- REPORT ----------------
@@ -293,6 +317,24 @@ public class AdminReportController(AdminService service) : ControllerBase
     [HttpGet("pending")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingReportsAsync());
+
+    [HttpPost("{id:int}/approve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Approve(int id)
+    {
+        var approved = await service.ApproveReportAsync(id);
+        return Ok(approved);
+    }
+
+    [HttpPost("{id:int}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reject(int id)
+    {
+        var rejected = await service.RejectReportAsync(id);
+        return Ok(rejected);
+    }
 }
 
 // ---------------- CASE TYPE ----------------

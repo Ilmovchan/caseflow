@@ -12,7 +12,7 @@ public class DeleteModel(AdminService adminService) : PageModel
     [BindProperty]
     public int Id { get; set; }
 
-    public Detective Detective { get; set; } = null!;
+    public CaseFlow.DAL.Models.Detective Detective { get; set; } = null!;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {

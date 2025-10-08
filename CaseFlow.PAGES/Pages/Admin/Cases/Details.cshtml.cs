@@ -10,7 +10,7 @@ public class DetailsModel(AdminService adminService) : PageModel
     private readonly AdminService _adminService = adminService;
 
     public Case Case { get; set; } = null!;
-    public List<Detective> UnassignedDetectives { get; set; } = new();
+    public List<CaseFlow.DAL.Models.Detective> UnassignedDetectives { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int id)
     {

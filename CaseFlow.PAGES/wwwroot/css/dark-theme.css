@@ -440,3 +440,43 @@ h1, h2, h3, h4, h5, h6 {
         color: black !important;
     }
 }
+
+/* --- CaseFlow Pagination (Strict Dark Blue Style) --- */
+.pagination {
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.pagination .page-item {
+    margin: 0 0.25rem;
+}
+
+.pagination .page-link {
+    background-color: #0e1a2b !important;
+    border: 1px solid #1f6feb !important;
+    color: #58a6ff !important;
+    border-radius: 10px !important;
+    font-weight: 500;
+    padding: 0.8rem 1.4rem;
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    box-shadow: none !important;
+}
+
+.pagination .page-link:hover {
+    background-color: #162238 !important;
+    color: #79b8ff !important;
+    border-color: #2b4a8a !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: none !important;
+    transform: none !important;
+}

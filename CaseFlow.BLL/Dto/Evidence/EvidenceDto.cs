@@ -12,5 +12,4 @@ public class EvidenceDto
     public string? Annotation { get; set; }
     public string? Purpose { get; set; } 
     
-    public ApprovalStatus? ApprovalStatus { get; set; }
 }
