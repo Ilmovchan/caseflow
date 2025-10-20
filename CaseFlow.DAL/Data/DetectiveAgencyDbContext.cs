@@ -187,13 +187,16 @@ public partial class DetectiveAgencyDbContext : DbContext
 
             entity.ToTable(t =>
             {
-                t.HasCheckConstraint("collection_date_format", 
+                t.HasCheckConstraint("collection_date_format",
                     @"collection_date <= CURRENT_TIMESTAMP");
             });
 
             entity.Property(e => e.Type)
                 .HasColumnType("evidence_type");
 
+            entity.Property(e => e.ApprovalStatus)
+                .HasColumnType("approval_status")
+                .HasDefaultValue(ApprovalStatus.Draft);
         });
 
         
@@ -295,33 +298,37 @@ public partial class DetectiveAgencyDbContext : DbContext
         {
             entity.ToTable(t =>
             {
-                t.HasCheckConstraint("name_format", 
+                t.HasCheckConstraint("name_format",
                     @"first_name ~ '^[А-ЯІЇЄа-яіїє]+$' AND last_name ~ '^[А-ЯІЇЄа-яіїє]+$' AND (father_name IS NULL OR father_name ~ '^[А-ЯІЇЄа-яіїє]+$')");
 
-                t.HasCheckConstraint("phone_number_format", 
+                t.HasCheckConstraint("phone_number_format",
                     @"phone_number ~ '^\+380\d{9}$'");
 
-                t.HasCheckConstraint("date_of_birth_format", 
+                t.HasCheckConstraint("date_of_birth_format",
                     @"date_of_birth <= CURRENT_DATE");
 
-                t.HasCheckConstraint("region_format", 
+                t.HasCheckConstraint("region_format",
                     @"region ~ '^[А-ЯІЇЄа-яіїє]+$'");
 
-                t.HasCheckConstraint("city_format", 
+                t.HasCheckConstraint("city_format",
                     @"city ~ '^[А-ЯІЇЄа-яіїє\-]+$'");
 
-                t.HasCheckConstraint("street_format", 
+                t.HasCheckConstraint("street_format",
                     @"street ~ '^[А-ЯІЇЄа-яіїє\s\-]+$'");
 
-                t.HasCheckConstraint("building_number_format", 
+                t.HasCheckConstraint("building_number_format",
                     @"building_number ~ '^[0-9/]+$'");
 
-                t.HasCheckConstraint("apartment_number_format", 
+                t.HasCheckConstraint("apartment_number_format",
                     @"apartment_number IS NULL OR apartment_number > 0");
-                
-                t.HasCheckConstraint("weight_height_format", 
+
+                t.HasCheckConstraint("weight_height_format",
                     @"weight IS NOT NULL AND weight > 0 AND height IS NOT NULL AND height > 0 OR weight IS NULL AND height IS NULL");
             });
+
+            entity.Property(e => e.ApprovalStatus)
+                .HasColumnType("approval_status")
+                .HasDefaultValue(ApprovalStatus.Draft);
         });
 
         modelBuilder.Entity<User>(entity =>

@@ -4,6 +4,7 @@ using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Pages.Admin.Evidence;
 
@@ -29,22 +30,58 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             PageNumber = pagedResult.PageNumber,
             PageSize = pagedResult.PageSize
         };
-        
+
         AllEvidence = PagedEvidence.Items;
-        
-        // Add sample data if we have less than 10 evidence items
-        if (AllEvidence.Count < 10)
-        {
-            var sampleEvidence = GenerateSampleEvidence();
-            AllEvidence.AddRange(sampleEvidence);
-            // Re-sort the combined list to maintain ID order
-            AllEvidence = AllEvidence.OrderBy(e => e.Id).ToList();
-            PendingEvidence.AddRange(sampleEvidence);
-        }
-        
+
         // Get pending evidence for approval section
         var pendingEvidenceEntities = await _adminService.GetPendingEvidencesAsync();
         PendingEvidence = _mapper.Map<List<EvidenceDto>>(pendingEvidenceEntities);
+    }
+    
+    public async Task<IActionResult> OnPostApproveAsync(int id)
+    {
+        try
+        {
+            var approved = await _adminService.ApproveEvidenceAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Approved", 
+                newStatusText = "Схвалено", 
+                newStatusColor = "success",
+                approvalStatus = "Approved",
+                evidence = approved 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
+    }
+    
+    public async Task<IActionResult> OnPostRejectAsync(int id)
+    {
+        try
+        {
+            var rejected = await _adminService.RejectEvidenceAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Declined", 
+                newStatusText = "Відхилено", 
+                newStatusColor = "danger",
+                approvalStatus = "Declined",
+                evidence = rejected 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
     }
     
     private List<EvidenceDto> GenerateSampleEvidence()

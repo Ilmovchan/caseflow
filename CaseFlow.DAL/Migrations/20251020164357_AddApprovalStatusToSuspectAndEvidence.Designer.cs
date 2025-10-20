@@ -4,6 +4,7 @@ using CaseFlow.DAL.Data;
 using CaseFlow.DAL.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CaseFlow.DAL.Migrations
 {
     [DbContext(typeof(DetectiveAgencyDbContext))]
-    partial class DetectiveAgencyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251020164357_AddApprovalStatusToSuspectAndEvidence")]
+    partial class AddApprovalStatusToSuspectAndEvidence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

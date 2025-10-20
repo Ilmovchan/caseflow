@@ -1,7 +1,11 @@
+using AutoMapper;
 using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.CaseType;
 using CaseFlow.BLL.Dto.Client;
 using CaseFlow.BLL.Dto.Detective;
+using CaseFlow.BLL.Dto.Evidence;
+using CaseFlow.BLL.Dto.Report;
+using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -184,7 +188,7 @@ public class AdminDetectiveController(AdminService service) : ControllerBase
 [Route("api/admin/evidence")]
 [Produces("application/json")]
 [Consumes("application/json")]
-public class AdminEvidenceController(AdminService service) : ControllerBase
+public class AdminEvidenceController(AdminService service, IMapper mapper) : ControllerBase
 {
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -213,13 +217,15 @@ public class AdminEvidenceController(AdminService service) : ControllerBase
     public async Task<IActionResult> Approve(int id)
     {
         var approved = await service.ApproveEvidenceAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Approved", 
-            newStatusText = "Схвалено", 
+        var evidenceDto = mapper.Map<EvidenceDto>(approved);
+        evidenceDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Approved;
+        return Ok(new {
+            success = true,
+            newStatus = "Approved",
+            newStatusText = "Схвалено",
             newStatusColor = "success",
             approvalStatus = "Approved",
-            evidence = approved 
+            evidence = evidenceDto
         });
     }
 
@@ -229,13 +235,15 @@ public class AdminEvidenceController(AdminService service) : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var rejected = await service.RejectEvidenceAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Declined", 
-            newStatusText = "Відхилено", 
+        var evidenceDto = mapper.Map<EvidenceDto>(rejected);
+        evidenceDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Declined;
+        return Ok(new {
+            success = true,
+            newStatus = "Declined",
+            newStatusText = "Відхилено",
             newStatusColor = "danger",
             approvalStatus = "Declined",
-            evidence = rejected 
+            evidence = evidenceDto
         });
     }
 
@@ -248,7 +256,7 @@ public class AdminEvidenceController(AdminService service) : ControllerBase
 [Route("api/admin/suspect")]
 [Produces("application/json")]
 [Consumes("application/json")]
-public class AdminSuspectController(AdminService service) : ControllerBase
+public class AdminSuspectController(AdminService service, IMapper mapper) : ControllerBase
 {
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -277,13 +285,15 @@ public class AdminSuspectController(AdminService service) : ControllerBase
     public async Task<IActionResult> Approve(int id)
     {
         var approved = await service.ApproveSuspectAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Approved", 
-            newStatusText = "Схвалено", 
+        var suspectDto = mapper.Map<SuspectDto>(approved);
+        suspectDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Approved;
+        return Ok(new {
+            success = true,
+            newStatus = "Approved",
+            newStatusText = "Схвалено",
             newStatusColor = "success",
             approvalStatus = "Approved",
-            suspect = approved 
+            suspect = suspectDto
         });
     }
 
@@ -293,13 +303,15 @@ public class AdminSuspectController(AdminService service) : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var rejected = await service.RejectSuspectAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Declined", 
-            newStatusText = "Відхилено", 
+        var suspectDto = mapper.Map<SuspectDto>(rejected);
+        suspectDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Declined;
+        return Ok(new {
+            success = true,
+            newStatus = "Declined",
+            newStatusText = "Відхилено",
             newStatusColor = "danger",
             approvalStatus = "Declined",
-            suspect = rejected 
+            suspect = suspectDto
         });
     }
 
@@ -373,7 +385,7 @@ public class AdminExpenseController(AdminService service) : ControllerBase
 [Route("api/admin/report")]
 [Produces("application/json")]
 [Consumes("application/json")]
-public class AdminReportController(AdminService service) : ControllerBase
+public class AdminReportController(AdminService service, IMapper mapper) : ControllerBase
 {
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -402,13 +414,15 @@ public class AdminReportController(AdminService service) : ControllerBase
     public async Task<IActionResult> Approve(int id)
     {
         var approved = await service.ApproveReportAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Approved", 
-            newStatusText = "Схвалено", 
+        var reportDto = mapper.Map<ReportDto>(approved);
+        reportDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Approved;
+        return Ok(new {
+            success = true,
+            newStatus = "Approved",
+            newStatusText = "Схвалено",
             newStatusColor = "success",
             approvalStatus = "Approved",
-            report = approved 
+            report = reportDto
         });
     }
 
@@ -418,13 +432,15 @@ public class AdminReportController(AdminService service) : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var rejected = await service.RejectReportAsync(id);
-        return Ok(new { 
-            success = true, 
-            newStatus = "Declined", 
-            newStatusText = "Відхилено", 
+        var reportDto = mapper.Map<ReportDto>(rejected);
+        reportDto.ApprovalStatus = DAL.Enums.ApprovalStatus.Declined;
+        return Ok(new {
+            success = true,
+            newStatus = "Declined",
+            newStatusText = "Відхилено",
             newStatusColor = "danger",
             approvalStatus = "Declined",
-            report = rejected 
+            report = reportDto
         });
     }
 }

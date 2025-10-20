@@ -30,19 +30,9 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             PageNumber = pagedResult.PageNumber,
             PageSize = pagedResult.PageSize
         };
-        
+
         AllExpenses = PagedExpenses.Items;
-        
-        // Add sample data if we have less than 10 expenses
-        if (AllExpenses.Count < 10)
-        {
-            var sampleExpenses = GenerateSampleExpenses();
-            AllExpenses.AddRange(sampleExpenses);
-            // Re-sort the combined list to maintain ID order
-            AllExpenses = AllExpenses.OrderBy(e => e.Id).ToList();
-            PendingExpenses.AddRange(sampleExpenses.Where(e => e.ApprovalStatus.ToString() == "Pending"));
-        }
-        
+
         // Get pending expenses for approval section
         var pendingExpenseEntities = await _adminService.GetPendingExpensesAsync();
         PendingExpenses = _mapper.Map<List<ExpenseDto>>(pendingExpenseEntities);

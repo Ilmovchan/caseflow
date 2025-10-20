@@ -6,7 +6,7 @@ using CaseFlow.DAL.Interfaces;
 namespace CaseFlow.DAL.Models;
 
 [Table("evidence")]
-public class Evidence
+public class Evidence : IWorkflowEntity
 {
     [Column("id")]
     public int Id { get; set; }
@@ -32,7 +32,9 @@ public class Evidence
     [Column("purpose")]
     [MaxLength(200)]
     public string? Purpose { get; set; }
-    
-    
+
+    [Column("approval_status")]
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
+
     public ICollection<CaseEvidence> CaseEvidences { get; set; } = new List<CaseEvidence>();
 }

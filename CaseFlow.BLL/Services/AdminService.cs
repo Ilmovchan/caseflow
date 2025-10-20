@@ -287,55 +287,29 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.CaseEvidences.Where(ce => ce.CaseId == caseId).Select(ce => ce.Evidence).ToListAsync();
 
     public async Task<List<Evidence>> GetPendingEvidencesAsync() =>
-        await context.CaseEvidences
-            .Where(ce => ce.ApprovalStatus == ApprovalStatus.Pending)
-            .Select(ce => ce.Evidence)
+        await context.Evidences
+            .Where(e => e.ApprovalStatus == ApprovalStatus.Pending)
             .ToListAsync();
 
     public async Task<Evidence> ApproveEvidenceAsync(int evidenceId)
     {
-        // First try to find through junction table
-        var caseEvidence = await context.CaseEvidences
-            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId && ce.ApprovalStatus == ApprovalStatus.Pending);
-        
-        if (caseEvidence != null)
-        {
-            caseEvidence.ApprovalStatus = ApprovalStatus.Approved;
-            await context.SaveChangesAsync();
-            return caseEvidence.Evidence;
-        }
-        
-        // If not found in junction table, this might be a sample data case
-        // For now, just return the evidence (in a real scenario, you'd handle this differently)
         var evidence = await context.Evidences.FindAsync(evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
-        
+
+        evidence.ApprovalStatus = ApprovalStatus.Approved;
+        await context.SaveChangesAsync();
         return evidence;
     }
 
     public async Task<Evidence> RejectEvidenceAsync(int evidenceId)
     {
-        // First try to find through junction table
-        var caseEvidence = await context.CaseEvidences
-            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId && ce.ApprovalStatus == ApprovalStatus.Pending);
-        
-        if (caseEvidence != null)
-        {
-            caseEvidence.ApprovalStatus = ApprovalStatus.Declined;
-            await context.SaveChangesAsync();
-            return caseEvidence.Evidence;
-        }
-        
-        // If not found in junction table, this might be a sample data case
-        // For now, just return the evidence (in a real scenario, you'd handle this differently)
         var evidence = await context.Evidences.FindAsync(evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
-        
+
+        evidence.ApprovalStatus = ApprovalStatus.Declined;
+        await context.SaveChangesAsync();
         return evidence;
     }
-
-    // Evidence approval methods removed - Evidence entity no longer has ApprovalStatus
-    // Approval status is managed through CaseEvidence junction table
 
     #endregion
 
@@ -369,50 +343,27 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.CaseSuspects.Where(cs => cs.CaseId == caseId).Select(cs => cs.Suspect).ToListAsync();
 
     public async Task<List<Suspect>> GetPendingSuspectsAsync() =>
-        await context.CaseSuspects
-            .Where(cs => cs.ApprovalStatus == ApprovalStatus.Pending)
-            .Select(cs => cs.Suspect)
+        await context.Suspects
+            .Where(s => s.ApprovalStatus == ApprovalStatus.Pending)
             .ToListAsync();
 
     public async Task<Suspect> ApproveSuspectAsync(int suspectId)
     {
-        // First try to find through junction table
-        var caseSuspect = await context.CaseSuspects
-            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId && cs.ApprovalStatus == ApprovalStatus.Pending);
-        
-        if (caseSuspect != null)
-        {
-            caseSuspect.ApprovalStatus = ApprovalStatus.Approved;
-            await context.SaveChangesAsync();
-            return caseSuspect.Suspect;
-        }
-        
-        // If not found in junction table, this might be a sample data case
-        // For now, just return the suspect (in a real scenario, you'd handle this differently)
         var suspect = await context.Suspects.FindAsync(suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
-        
+
+        suspect.ApprovalStatus = ApprovalStatus.Approved;
+        await context.SaveChangesAsync();
         return suspect;
     }
 
     public async Task<Suspect> RejectSuspectAsync(int suspectId)
     {
-        // First try to find through junction table
-        var caseSuspect = await context.CaseSuspects
-            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId && cs.ApprovalStatus == ApprovalStatus.Pending);
-        
-        if (caseSuspect != null)
-        {
-            caseSuspect.ApprovalStatus = ApprovalStatus.Declined;
-            await context.SaveChangesAsync();
-            return caseSuspect.Suspect;
-        }
-        
-        // If not found in junction table, this might be a sample data case
-        // For now, just return the suspect (in a real scenario, you'd handle this differently)
         var suspect = await context.Suspects.FindAsync(suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
-        
+
+        suspect.ApprovalStatus = ApprovalStatus.Declined;
+        await context.SaveChangesAsync();
         return suspect;
     }
 

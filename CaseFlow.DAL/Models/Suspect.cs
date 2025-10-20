@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using CaseFlow.DAL.Enums;
+using CaseFlow.DAL.Interfaces;
 
 namespace CaseFlow.DAL.Models;
 
 [Table("suspect")]
-public class Suspect
+public class Suspect : IWorkflowEntity
 {
     [Column("id")]
     public int Id { get; set; }
@@ -64,6 +65,8 @@ public class Suspect
     [Column("prior_convictions")]
     public string? PriorConvictions { get; set; }
 
+    [Column("approval_status")]
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
 
     public ICollection<CaseSuspect> CaseSuspects { get; set; } = new List<CaseSuspect>();
 }

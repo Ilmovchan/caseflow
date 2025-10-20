@@ -4,6 +4,7 @@ using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Pages.Admin.Reports;
 
@@ -29,22 +30,58 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             PageNumber = pagedResult.PageNumber,
             PageSize = pagedResult.PageSize
         };
-        
+
         AllReports = PagedReports.Items;
-        
-        // Add sample data if we have less than 10 reports
-        if (AllReports.Count < 10)
-        {
-            var sampleReports = GenerateSampleReports();
-            AllReports.AddRange(sampleReports);
-            // Re-sort the combined list to maintain ID order
-            AllReports = AllReports.OrderBy(r => r.Id).ToList();
-            PendingReports.AddRange(sampleReports.Where(r => r.ApprovalStatus.ToString() == "Pending"));
-        }
-        
+
         // Get pending reports for approval section
         var pendingReportEntities = await _adminService.GetPendingReportsAsync();
         PendingReports = _mapper.Map<List<ReportDto>>(pendingReportEntities);
+    }
+    
+    public async Task<IActionResult> OnPostApproveAsync(int id)
+    {
+        try
+        {
+            var approved = await _adminService.ApproveReportAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Approved", 
+                newStatusText = "Схвалено", 
+                newStatusColor = "success",
+                approvalStatus = "Approved",
+                report = approved 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
+    }
+    
+    public async Task<IActionResult> OnPostRejectAsync(int id)
+    {
+        try
+        {
+            var rejected = await _adminService.RejectReportAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Declined", 
+                newStatusText = "Відхилено", 
+                newStatusColor = "danger",
+                approvalStatus = "Declined",
+                report = rejected 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
     }
     
     private List<ReportDto> GenerateSampleReports()

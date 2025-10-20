@@ -4,6 +4,7 @@ using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Pages.Admin.Suspects;
 
@@ -29,22 +30,58 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             PageNumber = pagedResult.PageNumber,
             PageSize = pagedResult.PageSize
         };
-        
+
         AllSuspects = PagedSuspects.Items;
-        
-        // Add sample data if we have less than 10 suspects
-        if (AllSuspects.Count < 10)
-        {
-            var sampleSuspects = GenerateSampleSuspects();
-            AllSuspects.AddRange(sampleSuspects);
-            // Re-sort the combined list to maintain ID order
-            AllSuspects = AllSuspects.OrderBy(s => s.Id).ToList();
-            PendingSuspects.AddRange(sampleSuspects);
-        }
-        
+
         // Get pending suspects for approval section
         var pendingSuspectEntities = await _adminService.GetPendingSuspectsAsync();
         PendingSuspects = _mapper.Map<List<SuspectDto>>(pendingSuspectEntities);
+    }
+    
+    public async Task<IActionResult> OnPostApproveAsync(int id)
+    {
+        try
+        {
+            var approved = await _adminService.ApproveSuspectAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Approved", 
+                newStatusText = "Схвалено", 
+                newStatusColor = "success",
+                approvalStatus = "Approved",
+                suspect = approved 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
+    }
+    
+    public async Task<IActionResult> OnPostRejectAsync(int id)
+    {
+        try
+        {
+            var rejected = await _adminService.RejectSuspectAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Declined", 
+                newStatusText = "Відхилено", 
+                newStatusColor = "danger",
+                approvalStatus = "Declined",
+                suspect = rejected 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
     }
     
     private List<SuspectDto> GenerateSampleSuspects()
