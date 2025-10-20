@@ -1,19 +1,19 @@
 @page "{id:int}"
 @model CaseFlow.PAGES.Pages.Admin.CaseTypes.DeleteModel
 @{
-    ViewData["Title"] = "Delete Case Type";
+    ViewData["Title"] = "Видалити тип справи";
 }
 
-<h2>Delete Case Type</h2>
+<h2>Видалити тип справи</h2>
 
 <div class="alert alert-warning">
-    Are you sure you want to delete case type <strong>#@Model.CaseType.Id</strong> - "@Model.CaseType.Name"?
+    Ви впевнені, що хочете видалити тип справи <strong>#@Model.CaseType.Id</strong> - "@Model.CaseType.Name"?
 </div>
 
 <form method="post">
     <input type="hidden" asp-for="Id" />
-    <button type="submit" class="btn btn-danger">Delete</button>
-    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
-    <a asp-page="Details" asp-route-id="@Model.CaseType.Id" class="btn btn-link">Details</a>
+    <button type="submit" class="btn btn-danger">Видалити</button>
+    <a asp-page="Index" class="btn btn-secondary">Скасувати</a>
+    <a asp-page="Details" asp-route-id="@Model.CaseType.Id" class="btn btn-link">Деталі</a>
     <div class="text-danger mt-2">@Model.ErrorMessage</div>
 </form>

@@ -16,7 +16,7 @@ public class Report : IWorkflowEntity
     public int CaseId { get; set; }
 
     [Column("report_date")]
-    public DateTime ReportDate { get; set; } = DateTime.Now; 
+    public DateTime ReportDate { get; set; } = DateTime.UtcNow;
 
     [Column("summary")]
     public string Summary { get; set; } = null!;

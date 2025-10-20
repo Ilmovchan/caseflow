@@ -1,29 +1,29 @@
 @page "{id:int}"
 @model CaseFlow.PAGES.Pages.Admin.Evidence.DetailsModel
 @{
-    ViewData["Title"] = "Evidence Details";
+    ViewData["Title"] = "Деталі доказу";
 }
 
-<h2>Evidence Details</h2>
+<h2>Деталі доказу</h2>
 
 <dl class="row">
-    <dt class="col-sm-2">Id</dt>
+    <dt class="col-sm-2">ID</dt>
     <dd class="col-sm-10">@Model.Evidence.Id</dd>
-    <dt class="col-sm-2">Type</dt>
+    <dt class="col-sm-2">Тип</dt>
     <dd class="col-sm-10">@Model.Evidence.Type</dd>
-    <dt class="col-sm-2">Description</dt>
+    <dt class="col-sm-2">Опис</dt>
     <dd class="col-sm-10">@Model.Evidence.Description</dd>
-    <dt class="col-sm-2">Collection Date</dt>
+    <dt class="col-sm-2">Дата збору</dt>
     <dd class="col-sm-10">@Model.Evidence.CollectionDate</dd>
-    <dt class="col-sm-2">Region</dt>
+    <dt class="col-sm-2">Регіон</dt>
     <dd class="col-sm-10">@Model.Evidence.Region</dd>
-    <dt class="col-sm-2">Annotation</dt>
+    <dt class="col-sm-2">Примітка</dt>
     <dd class="col-sm-10">@(Model.Evidence.Annotation ?? "-")</dd>
-    <dt class="col-sm-2">Purpose</dt>
+    <dt class="col-sm-2">Мета</dt>
     <dd class="col-sm-10">@(Model.Evidence.Purpose ?? "-")</dd>
 </dl>
 
 <p>
-    <a asp-page="Edit" asp-route-id="@Model.Evidence.Id" class="btn btn-primary">Edit</a>
-    <a asp-page="Index" class="btn btn-secondary">Back</a>
+    <a asp-page="Edit" asp-route-id="@Model.Evidence.Id" class="btn btn-primary">Редагувати</a>
+    <a asp-page="Index" class="btn btn-secondary">Назад</a>
 </p>

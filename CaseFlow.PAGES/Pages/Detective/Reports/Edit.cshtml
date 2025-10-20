@@ -1,0 +1,31 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Reports.EditModel
+@{
+    ViewData["Title"] = "Редагувати звіт";
+}
+
+<h2>Редагувати звіт</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-8">
+            <div class="mb-3">
+                <label asp-for="Input.Summary" class="form-label"></label>
+                <textarea asp-for="Input.Summary" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Input.Summary" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Comments" class="form-label"></label>
+                <textarea asp-for="Input.Comments" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Input.Comments" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Зберегти</button>
+    <a asp-page="Index" class="btn btn-secondary">Скасувати</a>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Деталі</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+

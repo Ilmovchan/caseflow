@@ -44,8 +44,23 @@ public class EditModel(AdminService adminService) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var updated = await _adminService.UpdateClientAsync(Id, Input);
-        return RedirectToPage("Details", new { id = updated.Id });
+        try
+        {
+            var updated = await _adminService.UpdateClientAsync(Id, Input);
+            return RedirectToPage("Details", new { id = updated.Id });
+        }
+        catch (Exception ex)
+        {
+            var constraintViolation = CaseFlow.BLL.Exceptions.ConstraintViolationMapper.TryExtractConstraintViolation(ex);
+            if (constraintViolation != null)
+            {
+                ModelState.AddModelError(string.Empty, constraintViolation.UserFriendlyMessage);
+                return Page();
+            }
+
+            ModelState.AddModelError(string.Empty, "An error occurred while updating the client. Please try again.");
+            return Page();
+        }
     }
 }
 

@@ -1,0 +1,107 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Reports.DetailsModel
+@{
+    ViewData["Title"] = "Деталі звіту";
+}
+
+<h2>Деталі звіту</h2>
+
+<dl class="row">
+    <dt class="col-sm-2">ID</dt>
+    <dd class="col-sm-10">@Model.Report.Id</dd>
+    <dt class="col-sm-2">ID справи</dt>
+    <dd class="col-sm-10">@Model.Report.CaseId</dd>
+    <dt class="col-sm-2">Дата звіту</dt>
+    <dd class="col-sm-10">@Model.Report.ReportDate</dd>
+    <dt class="col-sm-2">Статус</dt>
+    <dd class="col-sm-10">
+        <span class="badge bg-@(Model.Report.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Report.ApprovalStatus.ToString() == "Pending" ? "warning" : Model.Report.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary")" id="status-badge">
+            @(Model.Report.ApprovalStatus.ToString() == "Approved" ? "Схвалено" : Model.Report.ApprovalStatus.ToString() == "Pending" ? "Очікує" : Model.Report.ApprovalStatus.ToString() == "Declined" ? "Відхилено" : "Чернетка")
+        </span>
+    </dd>
+    <dt class="col-sm-2">Резюме</dt>
+    <dd class="col-sm-10">@Model.Report.Summary</dd>
+    <dt class="col-sm-2">Коментарі</dt>
+    <dd class="col-sm-10">@(Model.Report.Comments ?? "-")</dd>
+</dl>
+
+<div class="mt-4">
+    @if (Model.Report.ApprovalStatus.ToString() == "Draft")
+    {
+        <button type="button" class="btn btn-success" id="submit-btn" data-id="@Model.Report.Id">
+            <i class="fas fa-paper-plane"></i> Надіслати на перевірку
+        </button>
+    }
+    else if (Model.Report.ApprovalStatus.ToString() == "Declined")
+    {
+        <button type="button" class="btn btn-warning" id="resubmit-btn" data-id="@Model.Report.Id">
+            <i class="fas fa-redo"></i> Надіслати знову
+        </button>
+    }
+
+    @if (Model.Report.ApprovalStatus.ToString() != "Approved")
+    {
+        <a asp-page="Edit" asp-route-id="@Model.Report.Id" class="btn btn-primary">Редагувати</a>
+    }
+
+    <a asp-page="Index" class="btn btn-secondary">Назад</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('submit-btn');
+    const resubmitBtn = document.getElementById('resubmit-btn');
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            submitReport(this.getAttribute('data-id'));
+        });
+    }
+
+    if (resubmitBtn) {
+        resubmitBtn.addEventListener('click', function() {
+            submitReport(this.getAttribute('data-id'));
+        });
+    }
+});
+
+async function submitReport(id) {
+    try {
+        const response = await fetch(`/Detective/Reports/${id}?handler=Submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update status badge
+            const badge = document.getElementById('status-badge');
+            badge.className = 'badge bg-warning';
+            badge.textContent = 'Очікує';
+
+            // Hide submit buttons
+            const submitBtn = document.getElementById('submit-btn');
+            const resubmitBtn = document.getElementById('resubmit-btn');
+            if (submitBtn) submitBtn.style.display = 'none';
+            if (resubmitBtn) resubmitBtn.style.display = 'none';
+
+            // Show success message
+            alert('Звіт успішно надіслано на перевірку!');
+        } else {
+            alert('Помилка: ' + (result.error || 'Невідома помилка'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Помилка при надіслані звіту: ' + error.message);
+    }
+}
+</script>
+

@@ -1,0 +1,112 @@
+@page
+@model CaseFlow.PAGES.Pages.Detective.Reports.IndexModel
+@{
+    ViewData["Title"] = "Мої звіти";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+    <form method="get" class="d-flex gap-3" style="flex: 1; max-width: 400px;">
+        <input type="text" name="searchTerm" class="form-control" placeholder="Пошук..." value="@Model.SearchTerm" />
+        <button type="submit" class="btn btn-outline-secondary" title="Пошук">
+            <i class="fas fa-search"></i>
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            <a href="@Url.Page("Index")" class="btn btn-outline-secondary" title="Очистити">
+                <i class="fas fa-times"></i>
+            </a>
+        }
+    </form>
+    <a asp-page="Create" class="btn btn-primary">Створити новий звіт</a>
+</div>
+
+<table id="reports-table" class="table sortable-table paginated-table">
+    <thead>
+    <tr>
+        <th class="text-center">ID</th>
+        <th class="text-center">ID справи</th>
+        <th class="text-center">Дата звіту</th>
+        <th class="text-center">Статус</th>
+        <th class="text-center">Резюме</th>
+        <th class="text-center">Дії</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var r in Model.Reports)
+    {
+        <tr class="clickable-row" data-href="@Url.Page("Details", new { id = r.Id })">
+            <td>@r.Id</td>
+            <td>@r.CaseId</td>
+            <td>@r.ReportDate</td>
+            <td>
+                <span class="badge bg-@(r.ApprovalStatus.ToString() == "Approved" ? "success" : r.ApprovalStatus.ToString() == "Pending" ? "warning" : r.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary") approval-status" data-id="@r.Id" data-status="@r.ApprovalStatus">
+                    @(r.ApprovalStatus.ToString() == "Approved" ? "Схвалено" : r.ApprovalStatus.ToString() == "Pending" ? "Очікує" : r.ApprovalStatus.ToString() == "Declined" ? "Відхилено" : "Чернетка")
+                </span>
+            </td>
+            <td>@(r.Summary?.Substring(0, Math.Min(50, r.Summary.Length)) ?? "-")...</td>
+            <td class="approval-actions">
+                @if (r.ApprovalStatus.ToString() == "Draft" || r.ApprovalStatus.ToString() == "Declined")
+                {
+                    <button class="btn btn-sm btn-approve" data-id="@r.Id" data-type="report" title="Надіслати на перевірку">
+                        <i class="fas fa-check" style="color: #0dcaf0;"></i>
+                    </button>
+                    <button class="btn btn-sm btn-reject" data-id="@r.Id" data-type="report" title="Видалити">
+                        <i class="fas fa-times" style="color: #dc3545;"></i>
+                    </button>
+                }
+                else if (r.ApprovalStatus.ToString() == "Approved")
+                {
+                    <span class="text-muted">Оброблено</span>
+                }
+                else if (r.ApprovalStatus.ToString() == "Pending")
+                {
+                    <span class="text-muted">Очікує перевірки</span>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<!-- Server-side Pagination -->
+@if (Model.PagedReports.TotalPages > 1)
+{
+    <nav aria-label="Reports pagination" class="mt-3">
+        <ul class="pagination justify-content-center">
+            @if (Model.PagedReports.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage - 1)@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">Назад</a>
+                </li>
+            }
+
+            @for (int i = Math.Max(1, Model.CurrentPage - 1); i <= Math.Min(Model.PagedReports.TotalPages, Model.CurrentPage + 1); i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="?pageNumber=@i@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">@i</a>
+                </li>
+            }
+
+            @if (Model.PagedReports.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage + 1)@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">Далі</a>
+                </li>
+            }
+        </ul>
+    </nav>
+
+    <div class="text-center text-muted">
+        Показано @((Model.CurrentPage - 1) * Model.PageSize + 1)-@(Math.Min(Model.CurrentPage * Model.PageSize, Model.PagedReports.TotalCount)) з @Model.PagedReports.TotalCount записів
+    </div>
+}
+
+<div class="mb-5"></div>
+
+@section Scripts {
+    <script src="~/js/table-sorting.js"></script>
+    <script src="~/js/table-filters.js"></script>
+    <script src="~/js/table-pagination.js"></script>
+    <script src="~/js/approval-system.js"></script>
+}
+

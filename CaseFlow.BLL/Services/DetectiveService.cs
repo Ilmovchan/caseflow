@@ -437,5 +437,25 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             .Where(r => r.ApprovalStatus == ApprovalStatus.Pending)
             .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+
+    public async Task<ReportDto> SubmitReportAsync(int reportId)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+            ?? throw new EntityNotFoundException("Report", reportId);
+
+        report.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return mapper.Map<ReportDto>(report);
+    }
+
+    public async Task<ExpenseDto> SubmitExpenseAsync(int expenseId)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+            ?? throw new EntityNotFoundException("Expense", expenseId);
+
+        expense.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return mapper.Map<ExpenseDto>(expense);
+    }
     #endregion
 }

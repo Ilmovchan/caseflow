@@ -1,0 +1,32 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Expenses.DetailsModel
+@{
+    ViewData["Title"] = "Деталі видатків";
+}
+
+<h2>Деталі видатків</h2>
+
+<dl class="row">
+    <dt class="col-sm-2">ID</dt>
+    <dd class="col-sm-10">@Model.Expense.Id</dd>
+    <dt class="col-sm-2">ID справи</dt>
+    <dd class="col-sm-10">@Model.Expense.CaseId</dd>
+    <dt class="col-sm-2">Мета</dt>
+    <dd class="col-sm-10">@Model.Expense.Purpose</dd>
+    <dt class="col-sm-2">Сума</dt>
+    <dd class="col-sm-10">@Model.Expense.Amount.ToString("C")</dd>
+    <dt class="col-sm-2">Дата</dt>
+    <dd class="col-sm-10">@Model.Expense.DateTime</dd>
+    <dt class="col-sm-2">Статус</dt>
+    <dd class="col-sm-10">
+        <span class="badge bg-@(Model.Expense.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Expense.ApprovalStatus.ToString() == "Pending" ? "warning" : "secondary")">
+            @Model.Expense.ApprovalStatus
+        </span>
+    </dd>
+    <dt class="col-sm-2">Примітки</dt>
+    <dd class="col-sm-10">@(Model.Expense.Annotation ?? "-")</dd>
+</dl>
+
+<a asp-page="Edit" asp-route-id="@Model.Expense.Id" class="btn btn-primary">Редагувати</a>
+<a asp-page="Index" class="btn btn-secondary">Назад</a>
+

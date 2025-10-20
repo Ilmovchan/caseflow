@@ -1,4 +1,5 @@
 using CaseFlow.BLL.Dto.Evidence;
+using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -44,8 +45,23 @@ public class EditModel(AdminService adminService) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var updated = await _adminService.UpdateEvidenceAsync(Id, Input);
-        return RedirectToPage("Details", new { id = updated.Id });
+        try
+        {
+            var updated = await _adminService.UpdateEvidenceAsync(Id, Input);
+            return RedirectToPage("Details", new { id = updated.Id });
+        }
+        catch (Exception ex)
+        {
+            var constraintViolation = ConstraintViolationMapper.TryExtractConstraintViolation(ex);
+            if (constraintViolation != null)
+            {
+                ModelState.AddModelError(string.Empty, constraintViolation.UserFriendlyMessage);
+                return Page();
+            }
+
+            ModelState.AddModelError(string.Empty, "An error occurred while updating the evidence. Please try again.");
+            return Page();
+        }
     }
 }
 

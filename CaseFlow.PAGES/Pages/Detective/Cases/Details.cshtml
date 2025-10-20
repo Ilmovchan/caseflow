@@ -1,0 +1,31 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Cases.DetailsModel
+@{
+    ViewData["Title"] = "Деталі справи";
+}
+
+<h2>Деталі справи</h2>
+
+<dl class="row">
+    <dt class="col-sm-2">ID</dt>
+    <dd class="col-sm-10">@Model.Case.Id</dd>
+    <dt class="col-sm-2">Назва</dt>
+    <dd class="col-sm-10">@Model.Case.Title</dd>
+    <dt class="col-sm-2">Опис</dt>
+    <dd class="col-sm-10">@Model.Case.Description</dd>
+    <dt class="col-sm-2">Статус</dt>
+    <dd class="col-sm-10">@Model.Case.Status</dd>
+    <dt class="col-sm-2">Клієнт</dt>
+    <dd class="col-sm-10">@Model.Case.ClientFullName</dd>
+    <dt class="col-sm-2">Тип справи</dt>
+    <dd class="col-sm-10">@Model.Case.CaseTypeName</dd>
+    <dt class="col-sm-2">Початок</dt>
+    <dd class="col-sm-10">@Model.Case.StartDate</dd>
+    <dt class="col-sm-2">Термін</dt>
+    <dd class="col-sm-10">@Model.Case.DeadlineDate</dd>
+    <dt class="col-sm-2">Закриття</dt>
+    <dd class="col-sm-10">@(Model.Case.CloseDate?.ToString() ?? "-")</dd>
+</dl>
+
+<a asp-page="Index" class="btn btn-secondary">Назад</a>
+

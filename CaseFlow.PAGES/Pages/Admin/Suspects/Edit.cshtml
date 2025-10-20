@@ -1,10 +1,24 @@
 @page "{id:int}"
 @model CaseFlow.PAGES.Pages.Admin.Suspects.EditModel
 @{
-    ViewData["Title"] = "Edit Suspect";
+    ViewData["Title"] = "Редагувати підозрюваного";
 }
 
-<h2>Edit Suspect</h2>
+<h2>Редагувати підозрюваного</h2>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach (var modelState in ViewData.ModelState.Values)
+        {
+            @foreach (var error in modelState.Errors)
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 <form method="post">
     <input type="hidden" asp-for="Id" />
@@ -12,17 +26,20 @@
         <div class="col-md-6">
             <div class="mb-3">
                 <label asp-for="Input.FirstName" class="form-label"></label>
-                <input asp-for="Input.FirstName" class="form-control" />
+                <input asp-for="Input.FirstName" class="form-control" pattern="^[А-ЯІЇЄа-яіїє]+$" />
+                <small class="form-text text-muted">Тільки українські букви</small>
                 <span asp-validation-for="Input.FirstName" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Input.LastName" class="form-label"></label>
-                <input asp-for="Input.LastName" class="form-control" />
+                <input asp-for="Input.LastName" class="form-control" pattern="^[А-ЯІЇЄа-яіїє]+$" />
+                <small class="form-text text-muted">Тільки українські букви</small>
                 <span asp-validation-for="Input.LastName" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Input.FatherName" class="form-label"></label>
-                <input asp-for="Input.FatherName" class="form-control" />
+                <input asp-for="Input.FatherName" class="form-control" pattern="^[А-ЯІЇЄа-яіїє]+$" />
+                <small class="form-text text-muted">Тільки українські букви</small>
                 <span asp-validation-for="Input.FatherName" class="text-danger"></span>
             </div>
             <div class="mb-3">
@@ -32,7 +49,8 @@
             </div>
             <div class="mb-3">
                 <label asp-for="Input.PhoneNumber" class="form-label"></label>
-                <input asp-for="Input.PhoneNumber" class="form-control" />
+                <input asp-for="Input.PhoneNumber" class="form-control" placeholder="+380XXXXXXXXX" pattern="^\+380\d{9}$" />
+                <small class="form-text text-muted">Format: +380XXXXXXXXX (e.g., +380991234567)</small>
                 <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
             </div>
             <div class="mb-3">
@@ -44,22 +62,26 @@
         <div class="col-md-6">
             <div class="mb-3">
                 <label asp-for="Input.Region" class="form-label"></label>
-                <input asp-for="Input.Region" class="form-control" />
+                <input asp-for="Input.Region" class="form-control" pattern="^[А-ЯІЇЄа-яіїє]+$" />
+                <small class="form-text text-muted">Тільки українські букви, без пробілів (наприклад, Одеса)</small>
                 <span asp-validation-for="Input.Region" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Input.City" class="form-label"></label>
-                <input asp-for="Input.City" class="form-control" />
+                <input asp-for="Input.City" class="form-control" pattern="^[А-ЯІЇЄа-яіїє\-]+$" />
+                <small class="form-text text-muted">Українські букви та дефіси (наприклад, Одеса)</small>
                 <span asp-validation-for="Input.City" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Input.Street" class="form-label"></label>
-                <input asp-for="Input.Street" class="form-control" />
+                <input asp-for="Input.Street" class="form-control" pattern="^[А-ЯІЇЄа-яіїє\s\-]+$" />
+                <small class="form-text text-muted">Українські букви, пробіли та дефіси (наприклад, Дерибасівська)</small>
                 <span asp-validation-for="Input.Street" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Input.BuildingNumber" class="form-label"></label>
-                <input asp-for="Input.BuildingNumber" class="form-control" />
+                <input asp-for="Input.BuildingNumber" class="form-control" pattern="^[0-9/]+$" />
+                <small class="form-text text-muted">Тільки цифри та слеші (наприклад, 126/1)</small>
                 <span asp-validation-for="Input.BuildingNumber" class="text-danger"></span>
             </div>
             <div class="mb-3">

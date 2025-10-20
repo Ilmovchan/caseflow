@@ -1,42 +1,42 @@
 @page "{id:int}"
 @model CaseFlow.PAGES.Pages.Admin.Cases.DetailsModel
 @{
-    ViewData["Title"] = "Case Details";
+    ViewData["Title"] = "Деталі справи";
 }
 
-<h2>Case Details</h2>
+<h2>Деталі справи</h2>
 
 <div>
     <dl class="row">
-        <dt class="col-sm-2">Id</dt>
+        <dt class="col-sm-2">ID</dt>
         <dd class="col-sm-10">@Model.Case.Id</dd>
-        <dt class="col-sm-2">Title</dt>
+        <dt class="col-sm-2">Назва</dt>
         <dd class="col-sm-10">@Model.Case.Title</dd>
-        <dt class="col-sm-2">Status</dt>
+        <dt class="col-sm-2">Статус</dt>
         <dd class="col-sm-10">@Model.Case.Status</dd>
-        <dt class="col-sm-2">ClientId</dt>
+        <dt class="col-sm-2">ID клієнта</dt>
         <dd class="col-sm-10">@Model.Case.ClientId</dd>
-        <dt class="col-sm-2">DetectiveId</dt>
+        <dt class="col-sm-2">ID детектива</dt>
         <dd class="col-sm-10">@(Model.Case.DetectiveId?.ToString() ?? "-")</dd>
-        <dt class="col-sm-2">CaseTypeId</dt>
+        <dt class="col-sm-2">ID типу справи</dt>
         <dd class="col-sm-10">@Model.Case.CaseTypeId</dd>
-        <dt class="col-sm-2">Start</dt>
+        <dt class="col-sm-2">Початок</dt>
         <dd class="col-sm-10">@Model.Case.StartDate</dd>
-        <dt class="col-sm-2">Deadline</dt>
+        <dt class="col-sm-2">Термін</dt>
         <dd class="col-sm-10">@Model.Case.DeadlineDate</dd>
-        <dt class="col-sm-2">Close</dt>
+        <dt class="col-sm-2">Закриття</dt>
         <dd class="col-sm-10">@(Model.Case.CloseDate?.ToString() ?? "-")</dd>
-        <dt class="col-sm-2">Description</dt>
+        <dt class="col-sm-2">Опис</dt>
         <dd class="col-sm-10">@Model.Case.Description</dd>
     </dl>
 </div>
 
 <p>
-    <a asp-page="Edit" asp-route-id="@Model.Case.Id" class="btn btn-primary">Edit</a>
-    <a asp-page="Index" class="btn btn-secondary">Back to List</a>
+    <a asp-page="Edit" asp-route-id="@Model.Case.Id" class="btn btn-primary">Редагувати</a>
+    <a asp-page="Index" class="btn btn-secondary">Назад до списку</a>
 </p>
 
-<h3>Detective Assignment</h3>
+<h3>Призначення детектива</h3>
 <div class="mb-3">
     <form method="post" asp-page-handler="Assign">
         <input type="hidden" name="id" value="@Model.Case.Id" />
@@ -47,13 +47,13 @@
                     <option value="@d.Id">#@d.Id @d.LastName @d.FirstName</option>
                 }
             </select>
-            <button type="submit" class="btn btn-outline-primary">Assign</button>
+            <button type="submit" class="btn btn-outline-primary">Призначити</button>
         </div>
     </form>
 </div>
 
 <form method="post" asp-page-handler="Dismiss">
     <input type="hidden" name="id" value="@Model.Case.Id" />
-    <button type="submit" class="btn btn-outline-warning" @(Model.Case.DetectiveId == null ? "disabled" : null)>Dismiss Detective</button>
+    <button type="submit" class="btn btn-outline-warning" @(Model.Case.DetectiveId == null ? "disabled" : null)>Відсторонити детектива</button>
 </form>
 
