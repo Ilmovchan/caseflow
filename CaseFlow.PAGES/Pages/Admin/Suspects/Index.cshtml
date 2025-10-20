@@ -4,13 +4,20 @@
     ViewData["Title"] = "Підозрювані";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary filter-btn" data-table="suspects-table">
-            <i class="fas fa-filter me-1"></i>Фільтр
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+    <form method="get" class="d-flex gap-3" style="flex: 1; max-width: 400px;">
+        <input type="text" name="searchTerm" class="form-control" placeholder="Пошук..." value="@Model.SearchTerm" />
+        <button type="submit" class="btn btn-outline-secondary" title="Пошук">
+            <i class="fas fa-search"></i>
         </button>
-        <a asp-page="Create" class="btn btn-primary">Створити нового підозрюваного</a>
-    </div>
+        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            <a href="@Url.Page("Index")" class="btn btn-outline-secondary" title="Очистити">
+                <i class="fas fa-times"></i>
+            </a>
+        }
+    </form>
+    <a asp-page="Create" class="btn btn-primary">Створити нового підозрюваного</a>
 </div>
 
 <table id="suspects-table" class="table sortable-table paginated-table">
@@ -67,26 +74,26 @@
             @if (Model.PagedSuspects.HasPreviousPage)
             {
                 <li class="page-item">
-                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage - 1)">Попередня</a>
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage - 1)@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">Назад</a>
                 </li>
             }
-            
-            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.PagedSuspects.TotalPages, Model.CurrentPage + 2); i++)
+
+            @for (int i = Math.Max(1, Model.CurrentPage - 1); i <= Math.Min(Model.PagedSuspects.TotalPages, Model.CurrentPage + 1); i++)
             {
                 <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" href="?pageNumber=@i">@i</a>
+                    <a class="page-link" href="?pageNumber=@i@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">@i</a>
                 </li>
             }
-            
+
             @if (Model.PagedSuspects.HasNextPage)
             {
                 <li class="page-item">
-                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage + 1)">Наступна</a>
+                    <a class="page-link" href="?pageNumber=@(Model.CurrentPage + 1)@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "" : $"&searchTerm={Uri.EscapeDataString(Model.SearchTerm)}")">Далі</a>
                 </li>
             }
         </ul>
     </nav>
-    
+
     <div class="text-center text-muted">
         Показано @((Model.CurrentPage - 1) * Model.PageSize + 1)-@(Math.Min(Model.CurrentPage * Model.PageSize, Model.PagedSuspects.TotalCount)) з @Model.PagedSuspects.TotalCount записів
     </div>

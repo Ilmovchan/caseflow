@@ -3,6 +3,7 @@ using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
+using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,12 +18,25 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     public List<ExpenseDto> PendingExpenses { get; set; } = new();
     public PagedResult<ExpenseDto> PagedExpenses { get; set; } = new();
     public int CurrentPage { get; set; } = 1;
-    public int PageSize { get; set; } = 15;
+    public int PageSize { get; set; } = 20;
+
+    [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
 
     public async Task OnGetAsync(int pageNumber = 1)
     {
         CurrentPage = pageNumber;
-        var pagedResult = await _adminService.GetExpensesPagedAsync(pageNumber, PageSize);
+
+        PagedResult<Expense> pagedResult;
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            pagedResult = await _adminService.SearchExpensesPagedAsync(SearchTerm, pageNumber, PageSize);
+        }
+        else
+        {
+            pagedResult = await _adminService.GetExpensesPagedAsync(pageNumber, PageSize);
+        }
+
         PagedExpenses = new PagedResult<ExpenseDto>
         {
             Items = _mapper.Map<List<ExpenseDto>>(pagedResult.Items),

@@ -32,15 +32,64 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Case>> GetCasesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Cases.CountAsync();
-        var items = await context.Cases
+        var query = context.Cases
             .Include(c => c.CaseType)
             .Include(c => c.Client)
             .Include(c => c.Detective)
+            .AsQueryable();
+
+        var allItems = await query.ToListAsync();
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(c => c.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Case>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Case>> SearchCasesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .AsQueryable();
+
+        // First, fetch all data then filter in memory for complex searches
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(c =>
+                c.Id.ToString().Contains(term) ||
+                c.Title.ToLower().Contains(term) ||
+                c.Status.ToString().ToLower().Contains(term) ||
+                (c.Client != null && c.Client.FirstName.ToLower().Contains(term)) ||
+                (c.Client != null && c.Client.LastName.ToLower().Contains(term)) ||
+                (c.Detective != null && c.Detective.FirstName.ToLower().Contains(term)) ||
+                (c.Detective != null && c.Detective.LastName.ToLower().Contains(term)) ||
+                (c.CaseType != null && c.CaseType.Name.ToLower().Contains(term)) ||
+                c.StartDate.ToString().Contains(term) ||
+                c.DeadlineDate.ToString().Contains(term) ||
+                (c.CloseDate != null && c.CloseDate.Value.ToString().Contains(term)))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(c => c.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Case>
         {
@@ -107,12 +156,52 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Client>> GetClientsPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Clients.CountAsync();
-        var items = await context.Clients
+        var query = context.Clients.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(c => c.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Client>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Client>> SearchClientsPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Clients.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(c =>
+                c.Id.ToString().Contains(term) ||
+                c.FirstName.ToLower().Contains(term) ||
+                c.LastName.ToLower().Contains(term) ||
+                (c.FatherName != null && c.FatherName.ToLower().Contains(term)) ||
+                (c.Email != null && c.Email.ToLower().Contains(term)) ||
+                (c.PhoneNumber != null && c.PhoneNumber.Contains(term)) ||
+                (c.City != null && c.City.ToLower().Contains(term)) ||
+                (c.Region != null && c.Region.ToLower().Contains(term)) ||
+                c.RegistrationDate.ToString().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(c => c.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Client>
         {
@@ -170,12 +259,52 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Detective>> GetDetectivesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Detectives.CountAsync();
-        var items = await context.Detectives
+        var query = context.Detectives.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(d => d.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Detective>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Detective>> SearchDetectivesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Detectives.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(d =>
+                d.Id.ToString().Contains(term) ||
+                d.FirstName.ToLower().Contains(term) ||
+                d.LastName.ToLower().Contains(term) ||
+                (d.FatherName != null && d.FatherName.ToLower().Contains(term)) ||
+                d.Status.ToString().ToLower().Contains(term) ||
+                d.HireDate.ToString().Contains(term) ||
+                (d.Email != null && d.Email.ToLower().Contains(term)) ||
+                (d.PhoneNumber != null && d.PhoneNumber.Contains(term)) ||
+                (d.City != null && d.City.ToLower().Contains(term)))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(d => d.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Detective>
         {
@@ -267,12 +396,49 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Evidence>> GetEvidencesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Evidences.CountAsync();
-        var items = await context.Evidences
+        var query = context.Evidences.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(e => e.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Evidence>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Evidence>> SearchEvidencesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Evidences.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(e =>
+                e.Id.ToString().Contains(term) ||
+                e.Type.ToString().ToLower().Contains(term) ||
+                e.Description.ToLower().Contains(term) ||
+                e.CollectionDate.ToString().Contains(term) ||
+                e.Region.ToLower().Contains(term) ||
+                e.ApprovalStatus.ToString().ToLower().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(e => e.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Evidence>
         {
@@ -323,12 +489,52 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Suspect>> GetSuspectsPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Suspects.CountAsync();
-        var items = await context.Suspects
+        var query = context.Suspects.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(s => s.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Suspect>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Suspect>> SearchSuspectsPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Suspects.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(s =>
+                s.Id.ToString().Contains(term) ||
+                (s.FirstName != null && s.FirstName.ToLower().Contains(term)) ||
+                (s.LastName != null && s.LastName.ToLower().Contains(term)) ||
+                (s.FatherName != null && s.FatherName.ToLower().Contains(term)) ||
+                (s.Nickname != null && s.Nickname.ToLower().Contains(term)) ||
+                (s.PhoneNumber != null && s.PhoneNumber.Contains(term)) ||
+                (s.City != null && s.City.ToLower().Contains(term)) ||
+                (s.Region != null && s.Region.ToLower().Contains(term)) ||
+                s.ApprovalStatus.ToString().ToLower().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(s => s.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Suspect>
         {
@@ -382,12 +588,53 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Expense>> GetExpensesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Expenses.CountAsync();
-        var items = await context.Expenses
+        var query = context.Expenses
+            .Include(e => e.Case)
+            .AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(e => e.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Expense>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Expense>> SearchExpensesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Expenses
+            .Include(e => e.Case)
+            .AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(e =>
+                e.Id.ToString().Contains(term) ||
+                (e.Case != null && e.Case.Title.ToLower().Contains(term)) ||
+                e.Purpose.ToLower().Contains(term) ||
+                e.Amount.ToString().Contains(term) ||
+                e.DateTime.ToString().Contains(term) ||
+                e.ApprovalStatus.ToString().ToLower().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(e => e.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Expense>
         {
@@ -438,12 +685,53 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<Report>> GetReportsPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.Reports.CountAsync();
-        var items = await context.Reports
+        var query = context.Reports
+            .Include(r => r.Case)
+            .AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(r => r.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<Report>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<Report>> SearchReportsPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.Reports
+            .Include(r => r.Case)
+            .AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(r =>
+                r.Id.ToString().Contains(term) ||
+                (r.Case != null && r.Case.Title.ToLower().Contains(term)) ||
+                r.Summary.ToLower().Contains(term) ||
+                (r.Comments != null && r.Comments.ToLower().Contains(term)) ||
+                r.ReportDate.ToString().Contains(term) ||
+                r.ApprovalStatus.ToString().ToLower().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(r => r.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<Report>
         {
@@ -494,12 +782,46 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<PagedResult<CaseType>> GetCaseTypesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var totalCount = await context.CaseTypes.CountAsync();
-        var items = await context.CaseTypes
+        var query = context.CaseTypes.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        var totalCount = allItems.Count;
+        var items = allItems
             .OrderBy(ct => ct.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
+
+        return new PagedResult<CaseType>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResult<CaseType>> SearchCaseTypesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
+    {
+        var query = context.CaseTypes.AsQueryable();
+        var allItems = await query.ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            allItems = allItems.Where(ct =>
+                ct.Id.ToString().Contains(term) ||
+                ct.Name.ToLower().Contains(term) ||
+                ct.Price.ToString().Contains(term))
+                .ToList();
+        }
+
+        var totalCount = allItems.Count;
+        var items = allItems
+            .OrderBy(ct => ct.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return new PagedResult<CaseType>
         {
