@@ -5,11 +5,11 @@ using CaseFlow.BLL.Dto.Detective;
 using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CaseFlow.API.Controllers;
+namespace CaseFlow.PAGES.Controllers;
 
 // ---------------- CASE ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/case")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminCaseController(AdminService service) : ControllerBase
@@ -75,7 +75,7 @@ public class AdminCaseController(AdminService service) : ControllerBase
 
 // ---------------- CLIENT ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/client")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminClientController(AdminService service) : ControllerBase
@@ -126,7 +126,7 @@ public class AdminClientController(AdminService service) : ControllerBase
 
 // ---------------- DETECTIVE ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/detective")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminDetectiveController(AdminService service) : ControllerBase
@@ -181,7 +181,7 @@ public class AdminDetectiveController(AdminService service) : ControllerBase
 
 // ---------------- EVIDENCE ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/evidence")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminEvidenceController(AdminService service) : ControllerBase
@@ -207,13 +207,45 @@ public class AdminEvidenceController(AdminService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingEvidencesAsync());
 
+    [HttpPost("{id:int}/approve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Approve(int id)
+    {
+        var approved = await service.ApproveEvidenceAsync(id);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Approved", 
+            newStatusText = "Схвалено", 
+            newStatusColor = "success",
+            approvalStatus = "Approved",
+            evidence = approved 
+        });
+    }
+
+    [HttpPost("{id:int}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reject(int id)
+    {
+        var rejected = await service.RejectEvidenceAsync(id);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Declined", 
+            newStatusText = "Відхилено", 
+            newStatusColor = "danger",
+            approvalStatus = "Declined",
+            evidence = rejected 
+        });
+    }
+
     // Evidence approval methods removed - Evidence entity no longer has ApprovalStatus
     // Approval status is managed through CaseEvidence junction table
 }
 
 // ---------------- SUSPECT ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/suspect")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminSuspectController(AdminService service) : ControllerBase
@@ -239,13 +271,45 @@ public class AdminSuspectController(AdminService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending() => Ok(await service.GetPendingSuspectsAsync());
 
+    [HttpPost("{id:int}/approve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Approve(int id)
+    {
+        var approved = await service.ApproveSuspectAsync(id);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Approved", 
+            newStatusText = "Схвалено", 
+            newStatusColor = "success",
+            approvalStatus = "Approved",
+            suspect = approved 
+        });
+    }
+
+    [HttpPost("{id:int}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reject(int id)
+    {
+        var rejected = await service.RejectSuspectAsync(id);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Declined", 
+            newStatusText = "Відхилено", 
+            newStatusColor = "danger",
+            approvalStatus = "Declined",
+            suspect = rejected 
+        });
+    }
+
     // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
     // Approval status is managed through CaseSuspect junction table
 }
 
 // ---------------- EXPENSE ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/expense")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminExpenseController(AdminService service) : ControllerBase
@@ -277,7 +341,14 @@ public class AdminExpenseController(AdminService service) : ControllerBase
     public async Task<IActionResult> Approve(int id)
     {
         var approved = await service.ApproveExpenseAsync(id);
-        return Ok(approved);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Approved", 
+            newStatusText = "Схвалено", 
+            newStatusColor = "success",
+            approvalStatus = "Approved",
+            expense = approved 
+        });
     }
 
     [HttpPost("{id:int}/reject")]
@@ -286,13 +357,20 @@ public class AdminExpenseController(AdminService service) : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var rejected = await service.RejectExpenseAsync(id);
-        return Ok(rejected);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Declined", 
+            newStatusText = "Відхилено", 
+            newStatusColor = "danger",
+            approvalStatus = "Declined",
+            expense = rejected 
+        });
     }
 }
 
 // ---------------- REPORT ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/report")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminReportController(AdminService service) : ControllerBase
@@ -324,7 +402,14 @@ public class AdminReportController(AdminService service) : ControllerBase
     public async Task<IActionResult> Approve(int id)
     {
         var approved = await service.ApproveReportAsync(id);
-        return Ok(approved);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Approved", 
+            newStatusText = "Схвалено", 
+            newStatusColor = "success",
+            approvalStatus = "Approved",
+            report = approved 
+        });
     }
 
     [HttpPost("{id:int}/reject")]
@@ -333,13 +418,20 @@ public class AdminReportController(AdminService service) : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var rejected = await service.RejectReportAsync(id);
-        return Ok(rejected);
+        return Ok(new { 
+            success = true, 
+            newStatus = "Declined", 
+            newStatusText = "Відхилено", 
+            newStatusColor = "danger",
+            approvalStatus = "Declined",
+            report = rejected 
+        });
     }
 }
 
 // ---------------- CASE TYPE ----------------
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/casetype")]
 [Produces("application/json")]
 [Consumes("application/json")]
 public class AdminCaseTypeController(AdminService service) : ControllerBase

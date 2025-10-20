@@ -1,7 +1,6 @@
-using CaseFlow.API.Extensions;
+using CaseFlow.PAGES.Extensions;
 using CaseFlow.BLL.MappingProfiles;
 using CaseFlow.BLL.Services;
-using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Подключение базы и AutoMapper
 builder.Services
     .ConfigureDatabase(builder.Configuration)
+    .ConfigureControllers()
     .AddAutoMapper(typeof(CaseFlowMappingProfile).Assembly);
 
 // Регистрация сервисов
@@ -74,5 +74,19 @@ using (var scope = app.Services.CreateScope())
 
 // Razor Pages
 app.MapRazorPages();
+
+// API Controllers
+app.MapControllers();
+
+// Debug: List all registered routes
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/debug/routes", () =>
+    {
+        var routes = new List<string>();
+        // This is a simple way to check if controllers are registered
+        return "Controllers should be registered at /api/admin/* and /api/detective/*";
+    });
+}
 
 app.Run();

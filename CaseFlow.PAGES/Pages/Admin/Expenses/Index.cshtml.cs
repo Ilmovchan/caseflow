@@ -4,6 +4,7 @@ using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Pages.Admin.Expenses;
 
@@ -45,6 +46,52 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         // Get pending expenses for approval section
         var pendingExpenseEntities = await _adminService.GetPendingExpensesAsync();
         PendingExpenses = _mapper.Map<List<ExpenseDto>>(pendingExpenseEntities);
+    }
+    
+    public async Task<IActionResult> OnPostApproveAsync(int id)
+    {
+        try
+        {
+            var approved = await _adminService.ApproveExpenseAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Approved", 
+                newStatusText = "Схвалено", 
+                newStatusColor = "success",
+                approvalStatus = "Approved",
+                expense = approved 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
+    }
+    
+    public async Task<IActionResult> OnPostRejectAsync(int id)
+    {
+        try
+        {
+            var rejected = await _adminService.RejectExpenseAsync(id);
+            return new JsonResult(new { 
+                success = true, 
+                newStatus = "Declined", 
+                newStatusText = "Відхилено", 
+                newStatusColor = "danger",
+                approvalStatus = "Declined",
+                expense = rejected 
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { 
+                success = false, 
+                error = ex.Message 
+            });
+        }
     }
     
     private List<ExpenseDto> GenerateSampleExpenses()

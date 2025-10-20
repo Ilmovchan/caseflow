@@ -22,7 +22,7 @@ public class SuspectDto
     public int? Weight { get; set; }
     public string? PhysicalDescription { get; set; }
     public string? PriorConvictions { get; set; }
-    
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
     
     // Computed property for full name
     public string? FullName => 

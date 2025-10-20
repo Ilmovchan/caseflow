@@ -5,7 +5,6 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Підозрювані</h2>
     <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary filter-btn" data-table="suspects-table">
             <i class="fas fa-filter me-1"></i>Фільтр
@@ -13,11 +12,6 @@
         <a asp-page="Create" class="btn btn-primary">Створити нового підозрюваного</a>
     </div>
 </div>
-
-<p>
-    <a asp-page="../Index" class="btn btn-secondary">Назад</a>
-    <a asp-page="/Index" class="btn btn-link">Головна</a>
-</p>
 
 <table id="suspects-table" class="table sortable-table paginated-table">
     <thead>
@@ -27,6 +21,8 @@
         <th class="text-center">Псевдонім</th>
         <th class="text-center">Телефон</th>
         <th class="text-center">Регіон</th>
+        <th class="text-center">Статус</th>
+        <th class="text-center">Дії</th>
     </tr>
     </thead>
     <tbody>
@@ -38,6 +34,26 @@
             <td>@(s.Nickname ?? "-")</td>
             <td>@(s.PhoneNumber ?? "-")</td>
             <td>@(s.Region ?? "-")</td>
+            <td>
+                <span class="badge bg-@(s.ApprovalStatus.ToString() == "Approved" ? "success" : s.ApprovalStatus.ToString() == "Pending" ? "warning" : s.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary") approval-status" data-id="@s.Id" data-status="@s.ApprovalStatus">
+                    @(s.ApprovalStatus.ToString() == "Approved" ? "Схвалено" : s.ApprovalStatus.ToString() == "Pending" ? "Очікує" : s.ApprovalStatus.ToString() == "Declined" ? "Відхилено" : "Чернетка")
+                </span>
+            </td>
+            <td class="approval-actions">
+                @if (s.ApprovalStatus.ToString() == "Pending")
+                {
+                    <button class="btn btn-sm btn-approve" data-id="@s.Id" data-type="suspect">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-reject" data-id="@s.Id" data-type="suspect">
+                        <i class="fas fa-times"></i>
+                    </button>
+                }
+                else
+                {
+                    <span class="text-muted">Оброблено</span>
+                }
+            </td>
         </tr>
     }
     </tbody>
@@ -82,4 +98,5 @@
     <script src="~/js/table-sorting.js"></script>
     <script src="~/js/table-filters.js"></script>
     <script src="~/js/table-pagination.js"></script>
+    <script src="~/js/approval-system.js"></script>
 }

@@ -98,7 +98,8 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 FatherName = random.Next(2) == 0 ? "Петрович" : null,
                 Nickname = random.Next(3) == 0 ? nicknames[random.Next(nicknames.Length)] : null,
                 PhoneNumber = random.Next(2) == 0 ? $"+380{random.Next(10, 99)}{random.Next(1000000, 9999999)}" : null,
-                Region = regions[random.Next(regions.Length)]
+                Region = regions[random.Next(regions.Length)],
+                ApprovalStatus = approvalStatus
             });
         }
         

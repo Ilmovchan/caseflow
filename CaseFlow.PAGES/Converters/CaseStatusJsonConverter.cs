@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using CaseFlow.DAL.Enums;
 using NpgsqlTypes;
 
-namespace CaseFlow.API.Converters;
+namespace CaseFlow.PAGES.Converters;
 
 public class CaseStatusJsonConverter : JsonConverter<CaseStatus>
 {

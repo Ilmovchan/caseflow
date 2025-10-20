@@ -6,7 +6,7 @@ using CaseFlow.BLL.Dto.Report;
 using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CaseFlow.API.Controllers;
+namespace CaseFlow.PAGES.Controllers;
 
 // ---------------- CASE ----------------
 [ApiController]

@@ -86,7 +86,8 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 Type = evidenceTypes[random.Next(evidenceTypes.Length)],
                 Description = descriptions[random.Next(descriptions.Length)],
                 CollectionDate = collectionDate,
-                Region = regions[random.Next(regions.Length)]
+                Region = regions[random.Next(regions.Length)],
+                ApprovalStatus = approvalStatus
             });
         }
         
