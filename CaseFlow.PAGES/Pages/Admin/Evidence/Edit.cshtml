@@ -1,0 +1,54 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.Evidence.EditModel
+@using CaseFlow.DAL.Enums
+@{
+    ViewData["Title"] = "Edit Evidence";
+}
+
+<h2>Edit Evidence</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Type" class="form-label"></label>
+                <select asp-for="Input.Type" class="form-control" asp-items="Html.GetEnumSelectList<EvidenceType>()">
+                    <option value="">-- Select Type --</option>
+                </select>
+                <span asp-validation-for="Input.Type" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Description" class="form-label"></label>
+                <textarea asp-for="Input.Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Description" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.CollectionDate" class="form-label"></label>
+                <input asp-for="Input.CollectionDate" class="form-control" type="datetime-local" />
+                <span asp-validation-for="Input.CollectionDate" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Region" class="form-label"></label>
+                <input asp-for="Input.Region" class="form-control" />
+                <span asp-validation-for="Input.Region" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Annotation" class="form-label"></label>
+                <textarea asp-for="Input.Annotation" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Annotation" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Purpose" class="form-label"></label>
+                <textarea asp-for="Input.Purpose" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Purpose" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Details</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+

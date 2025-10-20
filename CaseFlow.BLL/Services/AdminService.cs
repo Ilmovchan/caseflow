@@ -4,6 +4,10 @@ using CaseFlow.BLL.Dto.CaseType;
 using CaseFlow.BLL.Dto.Client;
 using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Dto.Detective;
+using CaseFlow.BLL.Dto.Evidence;
+using CaseFlow.BLL.Dto.Expense;
+using CaseFlow.BLL.Dto.Report;
+using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.DAL.Data;
 using CaseFlow.DAL.Enums;
@@ -477,6 +481,17 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         return evidence;
     }
 
+    public async Task<Evidence> UpdateEvidenceAsync(int id, UpdateEvidenceDto dto)
+    {
+        var evidence = await context.Evidences.FindAsync(id)
+                      ?? throw new EntityNotFoundException("Evidence", id);
+
+        mapper.Map(dto, evidence);
+        await context.SaveChangesAsync();
+
+        return evidence;
+    }
+
     #endregion
 
     #region Suspect
@@ -573,6 +588,17 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         return suspect;
     }
 
+    public async Task<Suspect> UpdateSuspectAsync(int id, UpdateSuspectDto dto)
+    {
+        var suspect = await context.Suspects.FindAsync(id)
+                     ?? throw new EntityNotFoundException("Suspect", id);
+
+        mapper.Map(dto, suspect);
+        await context.SaveChangesAsync();
+
+        return suspect;
+    }
+
     // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
     // Approval status is managed through CaseSuspect junction table
 
@@ -666,10 +692,21 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var expense = await context.Expenses.FindAsync(expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
-        
+
         expense.ApprovalStatus = ApprovalStatus.Declined;
         await context.SaveChangesAsync();
-        
+
+        return expense;
+    }
+
+    public async Task<Expense> UpdateExpenseAsync(int id, UpdateExpenseDto dto)
+    {
+        var expense = await context.Expenses.FindAsync(id)
+                     ?? throw new EntityNotFoundException("Expense", id);
+
+        mapper.Map(dto, expense);
+        await context.SaveChangesAsync();
+
         return expense;
     }
 
@@ -763,10 +800,21 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var report = await context.Reports.FindAsync(reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
-        
+
         report.ApprovalStatus = ApprovalStatus.Declined;
         await context.SaveChangesAsync();
-        
+
+        return report;
+    }
+
+    public async Task<Report> UpdateReportAsync(int id, UpdateReportDto dto)
+    {
+        var report = await context.Reports.FindAsync(id)
+                    ?? throw new EntityNotFoundException("Report", id);
+
+        mapper.Map(dto, report);
+        await context.SaveChangesAsync();
+
         return report;
     }
 

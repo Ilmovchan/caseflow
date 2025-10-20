@@ -1,0 +1,98 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.Suspects.EditModel
+@{
+    ViewData["Title"] = "Edit Suspect";
+}
+
+<h2>Edit Suspect</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label"></label>
+                <input asp-for="Input.FirstName" class="form-control" />
+                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label"></label>
+                <input asp-for="Input.LastName" class="form-control" />
+                <span asp-validation-for="Input.LastName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.FatherName" class="form-label"></label>
+                <input asp-for="Input.FatherName" class="form-control" />
+                <span asp-validation-for="Input.FatherName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Nickname" class="form-label"></label>
+                <input asp-for="Input.Nickname" class="form-control" />
+                <span asp-validation-for="Input.Nickname" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                <input asp-for="Input.PhoneNumber" class="form-control" />
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.DateOfBirth" class="form-label"></label>
+                <input asp-for="Input.DateOfBirth" class="form-control" type="date" />
+                <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Region" class="form-label"></label>
+                <input asp-for="Input.Region" class="form-control" />
+                <span asp-validation-for="Input.Region" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.City" class="form-label"></label>
+                <input asp-for="Input.City" class="form-control" />
+                <span asp-validation-for="Input.City" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Street" class="form-label"></label>
+                <input asp-for="Input.Street" class="form-control" />
+                <span asp-validation-for="Input.Street" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.BuildingNumber" class="form-label"></label>
+                <input asp-for="Input.BuildingNumber" class="form-control" />
+                <span asp-validation-for="Input.BuildingNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.ApartmentNumber" class="form-label"></label>
+                <input asp-for="Input.ApartmentNumber" class="form-control" type="number" />
+                <span asp-validation-for="Input.ApartmentNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Height" class="form-label"></label>
+                <input asp-for="Input.Height" class="form-control" type="number" />
+                <span asp-validation-for="Input.Height" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Weight" class="form-label"></label>
+                <input asp-for="Input.Weight" class="form-control" type="number" />
+                <span asp-validation-for="Input.Weight" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhysicalDescription" class="form-label"></label>
+                <textarea asp-for="Input.PhysicalDescription" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.PhysicalDescription" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PriorConvictions" class="form-label"></label>
+                <textarea asp-for="Input.PriorConvictions" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.PriorConvictions" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Details</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+

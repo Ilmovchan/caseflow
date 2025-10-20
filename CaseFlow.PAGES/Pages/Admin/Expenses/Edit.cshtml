@@ -1,0 +1,51 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Admin.Expenses.EditModel
+@{
+    ViewData["Title"] = "Edit Expense";
+}
+
+<h2>Edit Expense</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.DateTime" class="form-label"></label>
+                <input asp-for="Input.DateTime" class="form-control" type="datetime-local" />
+                <span asp-validation-for="Input.DateTime" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Purpose" class="form-label"></label>
+                <input asp-for="Input.Purpose" class="form-control" />
+                <span asp-validation-for="Input.Purpose" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Amount" class="form-label"></label>
+                <input asp-for="Input.Amount" class="form-control" type="number" step="0.01" />
+                <span asp-validation-for="Input.Amount" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Annotation" class="form-label"></label>
+                <textarea asp-for="Input.Annotation" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Annotation" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Status" class="form-label"></label>
+                <select asp-for="Input.Status" class="form-control">
+                    <option value="0">Draft</option>
+                    <option value="1">Pending</option>
+                    <option value="2">Approved</option>
+                    <option value="3">Declined</option>
+                </select>
+                <span asp-validation-for="Input.Status" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Details</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+
