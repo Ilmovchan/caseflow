@@ -1,14 +1,15 @@
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
-using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Detective.Expenses;
 
 [Authorize(Policy = "DetectiveOnly")]
+[IgnoreAntiforgeryToken]
 public class EditModel(DetectiveService detectiveService) : PageModel
 {
     private readonly DetectiveService _detectiveService = detectiveService;
@@ -53,8 +54,7 @@ public class EditModel(DetectiveService detectiveService) : PageModel
                 Purpose = Input.Purpose,
                 Amount = Input.Amount,
                 DateTime = utcDateTime,
-                Annotation = Input.Annotation,
-                Status = ApprovalStatus.Draft
+                Annotation = Input.Annotation
             };
 
             var updated = await _detectiveService.UpdateExpenseAsync(Id, dto);

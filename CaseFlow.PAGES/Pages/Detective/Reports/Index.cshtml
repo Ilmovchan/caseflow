@@ -45,14 +45,15 @@
             </td>
             <td>@(r.Summary?.Substring(0, Math.Min(50, r.Summary.Length)) ?? "-")...</td>
             <td class="approval-actions">
-                @if (r.ApprovalStatus.ToString() == "Draft" || r.ApprovalStatus.ToString() == "Declined")
+                @if (r.ApprovalStatus.ToString() == "Draft")
                 {
                     <button class="btn btn-sm btn-approve" data-id="@r.Id" data-type="report" title="Надіслати на перевірку">
                         <i class="fas fa-check" style="color: #0dcaf0;"></i>
                     </button>
-                    <button class="btn btn-sm btn-reject" data-id="@r.Id" data-type="report" title="Видалити">
-                        <i class="fas fa-times" style="color: #dc3545;"></i>
-                    </button>
+                }
+                else if (r.ApprovalStatus.ToString() == "Declined")
+                {
+                    <span class="text-muted">Відхилено</span>
                 }
                 else if (r.ApprovalStatus.ToString() == "Approved")
                 {

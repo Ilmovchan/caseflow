@@ -398,6 +398,15 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<Evidence>> GetEvidencesAsync() =>
         await context.Evidences.ToListAsync();
 
+    public async Task<Evidence> CreateEvidenceAsync(CreateEvidenceDto dto)
+    {
+        var evidenceEntity = mapper.Map<Evidence>(dto);
+        evidenceEntity.ApprovalStatus = ApprovalStatus.Draft;
+        context.Evidences.Add(evidenceEntity);
+        await context.SaveChangesAsync();
+        return evidenceEntity;
+    }
+
     public async Task<PagedResult<Evidence>> GetEvidencesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
         var query = context.Evidences.AsQueryable();
@@ -490,6 +499,34 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
 
         return evidence;
+    }
+
+    public async Task<Evidence> SubmitEvidenceAsync(int evidenceId)
+    {
+        var evidence = await context.Evidences.FindAsync(evidenceId)
+                     ?? throw new EntityNotFoundException("Evidence", evidenceId);
+
+        evidence.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return evidence;
+    }
+
+    public async Task DeleteEvidenceAsync(int evidenceId)
+    {
+        var evidence = await context.Evidences.FindAsync(evidenceId)
+                     ?? throw new EntityNotFoundException("Evidence", evidenceId);
+
+        context.Evidences.Remove(evidence);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task SetEvidenceStatusAsync(int evidenceId, ApprovalStatus status)
+    {
+        var evidence = await context.Evidences.FindAsync(evidenceId)
+                     ?? throw new EntityNotFoundException("Evidence", evidenceId);
+
+        evidence.ApprovalStatus = status;
+        await context.SaveChangesAsync();
     }
 
     #endregion
@@ -597,6 +634,34 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
 
         return suspect;
+    }
+
+    public async Task<Suspect> SubmitSuspectAsync(int suspectId)
+    {
+        var suspect = await context.Suspects.FindAsync(suspectId)
+                     ?? throw new EntityNotFoundException("Suspect", suspectId);
+
+        suspect.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return suspect;
+    }
+
+    public async Task DeleteSuspectAsync(int suspectId)
+    {
+        var suspect = await context.Suspects.FindAsync(suspectId)
+                     ?? throw new EntityNotFoundException("Suspect", suspectId);
+
+        context.Suspects.Remove(suspect);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task SetSuspectStatusAsync(int suspectId, ApprovalStatus status)
+    {
+        var suspect = await context.Suspects.FindAsync(suspectId)
+                     ?? throw new EntityNotFoundException("Suspect", suspectId);
+
+        suspect.ApprovalStatus = status;
+        await context.SaveChangesAsync();
     }
 
     // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
@@ -710,6 +775,34 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         return expense;
     }
 
+    public async Task<Expense> SubmitExpenseAsync(int expenseId)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+                     ?? throw new EntityNotFoundException("Expense", expenseId);
+
+        expense.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return expense;
+    }
+
+    public async Task DeleteExpenseAsync(int expenseId)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+                     ?? throw new EntityNotFoundException("Expense", expenseId);
+
+        context.Expenses.Remove(expense);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task SetExpenseStatusAsync(int expenseId, ApprovalStatus status)
+    {
+        var expense = await context.Expenses.FindAsync(expenseId)
+                     ?? throw new EntityNotFoundException("Expense", expenseId);
+
+        expense.ApprovalStatus = status;
+        await context.SaveChangesAsync();
+    }
+
     #endregion
 
     #region Report
@@ -816,6 +909,34 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
 
         return report;
+    }
+
+    public async Task<Report> SubmitReportAsync(int reportId)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+                    ?? throw new EntityNotFoundException("Report", reportId);
+
+        report.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        return report;
+    }
+
+    public async Task DeleteReportAsync(int reportId)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+                    ?? throw new EntityNotFoundException("Report", reportId);
+
+        context.Reports.Remove(report);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task SetReportStatusAsync(int reportId, ApprovalStatus status)
+    {
+        var report = await context.Reports.FindAsync(reportId)
+                    ?? throw new EntityNotFoundException("Report", reportId);
+
+        report.ApprovalStatus = status;
+        await context.SaveChangesAsync();
     }
 
     #endregion

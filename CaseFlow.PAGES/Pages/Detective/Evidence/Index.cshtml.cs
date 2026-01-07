@@ -5,10 +5,12 @@ using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Detective.Evidence;
 
 [Authorize(Policy = "DetectiveOnly")]
+[IgnoreAntiforgeryToken]
 public class IndexModel(DetectiveService detectiveService, IMapper mapper) : PageModel
 {
     private readonly DetectiveService _detectiveService = detectiveService;
@@ -33,7 +35,7 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
             var term = SearchTerm.ToLower();
             allEvidences = allEvidences.Where(e =>
                 e.EvidenceId.ToString().Contains(term) ||
-                e.CaseId.ToString().Contains(term) ||
+                (e.CaseId?.ToString() ?? "").Contains(term) ||
                 e.Type.ToString().ToLower().Contains(term) ||
                 (!string.IsNullOrEmpty(e.Description) && e.Description.ToLower().Contains(term)) ||
                 e.CollectionDate.ToString().Contains(term) ||
@@ -58,5 +60,47 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
 
         Evidences = PagedEvidences.Items;
     }
-}
 
+    public async Task<IActionResult> OnPostApproveAsync([FromQuery] int id)
+    {
+        try
+        {
+            var submitted = await _detectiveService.SubmitEvidenceAsync(id);
+            return new JsonResult(new {
+                success = true,
+                newStatus = "Pending",
+                newStatusText = "Очікує",
+                newStatusColor = "warning",
+                approvalStatus = "Pending",
+                message = "Доказ надіслано на перевірку!",
+                evidence = submitted
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    public async Task<IActionResult> OnPostRejectAsync([FromQuery] int id)
+    {
+        try
+        {
+            await _detectiveService.DeleteEvidenceAsync(id);
+            return new JsonResult(new {
+                success = true,
+                message = "Доказ видалено успішно"
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+}

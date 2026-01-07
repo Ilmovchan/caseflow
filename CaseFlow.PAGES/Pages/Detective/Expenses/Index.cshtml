@@ -47,14 +47,15 @@
                 </span>
             </td>
             <td class="approval-actions">
-                @if (e.ApprovalStatus.ToString() == "Draft" || e.ApprovalStatus.ToString() == "Declined")
+                @if (e.ApprovalStatus.ToString() == "Draft")
                 {
                     <button class="btn btn-sm btn-approve" data-id="@e.Id" data-type="expense" title="Надіслати на перевірку">
                         <i class="fas fa-check" style="color: #0dcaf0;"></i>
                     </button>
-                    <button class="btn btn-sm btn-reject" data-id="@e.Id" data-type="expense" title="Видалити">
-                        <i class="fas fa-times" style="color: #dc3545;"></i>
-                    </button>
+                }
+                else if (e.ApprovalStatus.ToString() == "Declined")
+                {
+                    <span class="text-muted">Відхилено</span>
                 }
                 else if (e.ApprovalStatus.ToString() == "Approved")
                 {

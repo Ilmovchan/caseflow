@@ -46,29 +46,44 @@ async function handleApproval(id, type, action) {
     let endpoint;
     const isDetectivePage = window.location.pathname.includes("/Detective/");
 
+    // Check if this is a Draft item (for Admin pages)
+    const statusBadge = row.querySelector(".approval-status");
+    const isDraft =
+      statusBadge && statusBadge.getAttribute("data-status") === "Draft";
+
     if (isDetectivePage) {
       // Detective panel endpoints
       if (type === "report") {
-        endpoint = `/Detective/Reports?handler=${
-          action === "approve" ? "Approve" : "Reject"
-        }&id=${id}`;
+        endpoint = `/Detective/Reports?handler=Approve&id=${id}`;
       } else if (type === "expense") {
-        endpoint = `/Detective/Expenses?handler=${
-          action === "approve" ? "Approve" : "Reject"
-        }&id=${id}`;
+        endpoint = `/Detective/Expenses?handler=Approve&id=${id}`;
+      } else if (type === "evidence") {
+        endpoint = `/Detective/Evidence?handler=Approve&id=${id}`;
+      } else if (type === "suspect") {
+        endpoint = `/Detective/Suspects?handler=Approve&id=${id}`;
       } else {
         throw new Error(`Unknown entity type: ${type}`);
       }
     } else {
       // Admin panel endpoints
+      // For Draft items: approve = Submit, reject = Delete
+      // For Pending items: approve = Approve, reject = Reject
+      const handler = isDraft
+        ? action === "approve"
+          ? "Submit"
+          : "Delete"
+        : action === "approve"
+        ? "Approve"
+        : "Reject";
+
       if (type === "expense") {
-        endpoint = `/api/admin/expense/${id}/${action}`;
+        endpoint = `/Admin/Expenses?handler=${handler}&id=${id}`;
       } else if (type === "report") {
-        endpoint = `/api/admin/report/${id}/${action}`;
+        endpoint = `/Admin/Reports?handler=${handler}&id=${id}`;
       } else if (type === "evidence") {
-        endpoint = `/api/admin/evidence/${id}/${action}`;
+        endpoint = `/Admin/Evidence?handler=${handler}&id=${id}`;
       } else if (type === "suspect") {
-        endpoint = `/api/admin/suspect/${id}/${action}`;
+        endpoint = `/Admin/Suspects?handler=${handler}&id=${id}`;
       } else {
         throw new Error(`Unknown entity type: ${type}`);
       }
@@ -76,12 +91,9 @@ async function handleApproval(id, type, action) {
 
     console.log(`Making request to: ${endpoint}`);
 
-    // Make the API call
+    // Make the API call - no body needed since we're using IgnoreAntiforgeryToken
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       credentials: "include",
     });
 
@@ -112,9 +124,20 @@ async function handleApproval(id, type, action) {
 
       // Show success message
       const isDetectivePage = window.location.pathname.includes("/Detective/");
-      const message = isDetectivePage
-        ? result.message || "Надіслано на перевірку успішно!"
-        : `${action === "approve" ? "Схвалено" : "Відхилено"} успішно!`;
+      let message;
+
+      if (isDetectivePage) {
+        message = result.message || "Надіслано на перевірку успішно!";
+      } else {
+        // Admin panel
+        if (isDraft && action === "approve") {
+          message = result.message || "Надіслано на перевірку успішно!";
+        } else {
+          message = `${
+            action === "approve" ? "Схвалено" : "Відхилено"
+          } успішно!`;
+        }
+      }
 
       showNotification(message, "success");
     }
@@ -163,9 +186,9 @@ function showNotification(message, type = "info") {
   const notification = document.createElement("div");
   notification.className = `alert alert-${
     type === "error" ? "danger" : type
-  } alert-dismissible fade show position-fixed`;
+  } alert-dismissible show position-fixed`;
   notification.style.cssText =
-    "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    "top: 20px; right: 20px; z-index: 9999; min-width: 300px; opacity: 1 !important;";
   notification.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

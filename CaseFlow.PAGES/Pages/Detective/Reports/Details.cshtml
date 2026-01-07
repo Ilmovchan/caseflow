@@ -67,11 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function submitReport(id) {
     try {
-        const response = await fetch(`/Detective/Reports/${id}?handler=Submit`, {
+        const response = await fetch(`/Detective/Reports/Details/${id}?handler=Submit`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             credentials: 'include'
         });
 
@@ -93,15 +90,31 @@ async function submitReport(id) {
             if (submitBtn) submitBtn.style.display = 'none';
             if (resubmitBtn) resubmitBtn.style.display = 'none';
 
-            // Show success message
-            alert('Звіт успішно надіслано на перевірку!');
+            // Show success message using the global notification function
+            if (typeof showNotification === 'function') {
+                showNotification('Звіт успішно надіслано на перевірку!', 'success');
+            } else {
+                alert('Звіт успішно надіслано на перевірку!');
+            }
         } else {
-            alert('Помилка: ' + (result.error || 'Невідома помилка'));
+            if (typeof showNotification === 'function') {
+                showNotification('Помилка: ' + (result.error || 'Невідома помилка'), 'error');
+            } else {
+                alert('Помилка: ' + (result.error || 'Невідома помилка'));
+            }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Помилка при надіслані звіту: ' + error.message);
+        if (typeof showNotification === 'function') {
+            showNotification('Помилка при надіслані звіту: ' + error.message, 'error');
+        } else {
+            alert('Помилка при надіслані звіту: ' + error.message);
+        }
     }
 }
 </script>
+
+@section Scripts {
+    <script src="~/js/approval-system.js"></script>
+}
 

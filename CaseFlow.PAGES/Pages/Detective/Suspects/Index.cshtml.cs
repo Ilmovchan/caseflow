@@ -5,10 +5,12 @@ using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Detective.Suspects;
 
 [Authorize(Policy = "DetectiveOnly")]
+[IgnoreAntiforgeryToken]
 public class IndexModel(DetectiveService detectiveService, IMapper mapper) : PageModel
 {
     private readonly DetectiveService _detectiveService = detectiveService;
@@ -59,5 +61,47 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
 
         Suspects = PagedSuspects.Items;
     }
-}
 
+    public async Task<IActionResult> OnPostApproveAsync([FromQuery] int id)
+    {
+        try
+        {
+            var submitted = await _detectiveService.SubmitSuspectAsync(id);
+            return new JsonResult(new {
+                success = true,
+                newStatus = "Pending",
+                newStatusText = "Очікує",
+                newStatusColor = "warning",
+                approvalStatus = "Pending",
+                message = "Підозрюваний надіслано на перевірку!",
+                suspect = submitted
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    public async Task<IActionResult> OnPostRejectAsync([FromQuery] int id)
+    {
+        try
+        {
+            await _detectiveService.DeleteSuspectAsync(id);
+            return new JsonResult(new {
+                success = true,
+                message = "Підозрюваний видалено успішно"
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+}

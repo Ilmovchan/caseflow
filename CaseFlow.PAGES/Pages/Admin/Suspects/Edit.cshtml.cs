@@ -1,6 +1,7 @@
 using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
+using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -52,6 +53,8 @@ public class EditModel(AdminService adminService) : PageModel
         try
         {
             var updated = await _adminService.UpdateSuspectAsync(Id, Input);
+            // Set status to Draft after edit
+            await _adminService.SetSuspectStatusAsync(Id, ApprovalStatus.Draft);
             return RedirectToPage("Details", new { id = updated.Id });
         }
         catch (Exception ex)

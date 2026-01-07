@@ -27,6 +27,8 @@
         <th class="text-center">Опис</th>
         <th class="text-center">Дата збору</th>
         <th class="text-center">Регіон</th>
+        <th class="text-center">Статус</th>
+        <th class="text-center">Дії</th>
     </tr>
     </thead>
     <tbody>
@@ -38,6 +40,31 @@
             <td>@(e.Description?.Substring(0, Math.Min(30, e.Description.Length)) ?? "-")...</td>
             <td>@e.CollectionDate</td>
             <td>@e.Region</td>
+            <td>
+                <span class="badge bg-@(e.ApprovalStatus.ToString() == "Approved" ? "success" : e.ApprovalStatus.ToString() == "Pending" ? "warning" : e.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary") approval-status" data-id="@e.EvidenceId" data-status="@e.ApprovalStatus">
+                    @(e.ApprovalStatus.ToString() == "Approved" ? "Схвалено" : e.ApprovalStatus.ToString() == "Pending" ? "Очікує" : e.ApprovalStatus.ToString() == "Declined" ? "Відхилено" : "Чернетка")
+                </span>
+            </td>
+            <td class="approval-actions">
+                @if (e.ApprovalStatus.ToString() == "Draft")
+                {
+                    <button class="btn btn-sm btn-approve" data-id="@e.EvidenceId" data-type="evidence" title="Надіслати на перевірку">
+                        <i class="fas fa-check" style="color: #0dcaf0;"></i>
+                    </button>
+                }
+                else if (e.ApprovalStatus.ToString() == "Declined")
+                {
+                    <span class="text-muted">Відхилено</span>
+                }
+                else if (e.ApprovalStatus.ToString() == "Approved")
+                {
+                    <span class="text-muted">Оброблено</span>
+                }
+                else if (e.ApprovalStatus.ToString() == "Pending")
+                {
+                    <span class="text-muted">Очікує перевірки</span>
+                }
+            </td>
         </tr>
     }
     </tbody>
@@ -82,5 +109,6 @@
     <script src="~/js/table-sorting.js"></script>
     <script src="~/js/table-filters.js"></script>
     <script src="~/js/table-pagination.js"></script>
+    <script src="~/js/approval-system.js"></script>
 }
 

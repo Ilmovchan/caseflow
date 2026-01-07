@@ -80,20 +80,63 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         try
         {
             var rejected = await _adminService.RejectReportAsync(id);
-            return new JsonResult(new { 
-                success = true, 
-                newStatus = "Declined", 
-                newStatusText = "Відхилено", 
+            return new JsonResult(new {
+                success = true,
+                newStatus = "Declined",
+                newStatusText = "Відхилено",
                 newStatusColor = "danger",
                 approvalStatus = "Declined",
-                report = rejected 
+                report = rejected
             });
         }
         catch (Exception ex)
         {
-            return new JsonResult(new { 
-                success = false, 
-                error = ex.Message 
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    public async Task<IActionResult> OnPostSubmitAsync(int id)
+    {
+        try
+        {
+            var submitted = await _adminService.SubmitReportAsync(id);
+            return new JsonResult(new {
+                success = true,
+                newStatus = "Pending",
+                newStatusText = "Очікує",
+                newStatusColor = "warning",
+                approvalStatus = "Pending",
+                message = "Звіт надіслано на перевірку!",
+                report = submitted
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        try
+        {
+            await _adminService.DeleteReportAsync(id);
+            return new JsonResult(new {
+                success = true,
+                message = "Звіт видалено успішно"
+            });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new {
+                success = false,
+                error = ex.Message
             });
         }
     }

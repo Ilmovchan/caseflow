@@ -67,6 +67,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
         var result = mapper.Map<EvidenceCaseDto>(evidenceEntity);
         result.CaseId = caseId;
+        result.EvidenceId = evidenceEntity.Id;
+        result.ApprovalStatus = ApprovalStatus.Draft;
         return result;
     }
 
@@ -74,12 +76,20 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var evidence = await context.Evidences.FindAsync(evidenceId)
             ?? throw new EntityNotFoundException("Evidence", evidenceId);
+        
+        var caseEvidence = await context.CaseEvidences
+            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId)
+            ?? throw new EntityNotFoundException("CaseEvidence", evidenceId);
 
         mapper.Map(dto, evidence);
+        // Set status to Draft after edit
+        caseEvidence.ApprovalStatus = ApprovalStatus.Draft;
         await context.SaveChangesAsync();
 
         var result = mapper.Map<EvidenceCaseDto>(evidence);
         result.EvidenceId = evidence.Id;
+        result.CaseId = caseEvidence.CaseId;
+        result.ApprovalStatus = caseEvidence.ApprovalStatus;
         return result;
     }
 
@@ -104,7 +114,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .FirstOrDefaultAsync();
 
@@ -119,7 +130,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .ToListAsync();
 
@@ -135,7 +147,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .ToListAsync();
 
@@ -151,7 +164,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .ToListAsync();
 
@@ -167,7 +181,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .ToListAsync();
 
@@ -183,7 +198,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 CollectionDate = ce.Evidence.CollectionDate,
                 Region = ce.Evidence.Region,
                 Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
             })
             .ToListAsync();
 
@@ -208,6 +224,23 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         context.CaseEvidences.Remove(entity);
         await context.SaveChangesAsync();
     }
+
+    public async Task<EvidenceCaseDto> SubmitEvidenceAsync(int evidenceId)
+    {
+        var caseEvidence = await context.CaseEvidences
+            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId)
+            ?? throw new EntityNotFoundException("CaseEvidence", evidenceId);
+
+        caseEvidence.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        
+        var evidence = await context.Evidences.FindAsync(evidenceId);
+        var result = mapper.Map<EvidenceCaseDto>(evidence!);
+        result.EvidenceId = evidenceId;
+        result.CaseId = caseEvidence.CaseId;
+        result.ApprovalStatus = caseEvidence.ApprovalStatus;
+        return result;
+    }
     #endregion
 
     #region Suspect
@@ -228,6 +261,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
         var result = mapper.Map<SuspectDto>(suspect);
         result.CaseId = caseId;
+        result.ApprovalStatus = ApprovalStatus.Draft;
         return result;
     }
 
@@ -235,11 +269,19 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var suspect = await context.Suspects.FindAsync(suspectId)
             ?? throw new EntityNotFoundException("Suspect", suspectId);
+        
+        var caseSuspect = await context.CaseSuspects
+            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId)
+            ?? throw new EntityNotFoundException("CaseSuspect", suspectId);
 
         mapper.Map(dto, suspect);
+        // Set status to Draft after edit
+        caseSuspect.ApprovalStatus = ApprovalStatus.Draft;
         await context.SaveChangesAsync();
 
-        return mapper.Map<SuspectDto>(suspect);
+        var result = mapper.Map<SuspectDto>(suspect);
+        result.ApprovalStatus = caseSuspect.ApprovalStatus;
+        return result;
     }
 
     public async Task DeleteSuspectAsync(int suspectId)
@@ -251,16 +293,40 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task<SuspectDto?> GetSuspectAsync(int suspectId) =>
-        await context.Suspects
-            .Where(s => s.Id == suspectId)
-            .ProjectTo<SuspectDto>(mapper.ConfigurationProvider)
-            .FirstOrDefaultAsync();
+    public async Task<SuspectDto?> GetSuspectAsync(int suspectId)
+    {
+        var suspect = await context.Suspects.FindAsync(suspectId);
+        if (suspect == null) return null;
+        
+        var caseSuspect = await context.CaseSuspects
+            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId);
+        
+        var result = mapper.Map<SuspectDto>(suspect);
+        if (caseSuspect != null)
+        {
+            result.ApprovalStatus = caseSuspect.ApprovalStatus;
+        }
+        return result;
+    }
 
-    public async Task<List<SuspectDto>> GetSuspectsAsync() =>
-        await context.Suspects
-            .ProjectTo<SuspectDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+    public async Task<List<SuspectDto>> GetSuspectsAsync()
+    {
+        var suspects = await context.Suspects.ToListAsync();
+        var caseSuspects = await context.CaseSuspects.ToListAsync();
+        
+        var results = suspects.Select(s =>
+        {
+            var dto = mapper.Map<SuspectDto>(s);
+            var cs = caseSuspects.FirstOrDefault(cse => cse.SuspectId == s.Id);
+            if (cs != null)
+            {
+                dto.ApprovalStatus = cs.ApprovalStatus;
+            }
+            return dto;
+        }).ToList();
+        
+        return results;
+    }
 
     public async Task<List<SuspectDto>> GetSuspectsFromCase(int caseId) =>
         await context.CaseSuspects
@@ -307,6 +373,21 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         context.CaseSuspects.Remove(entity);
         await context.SaveChangesAsync();
     }
+
+    public async Task<SuspectDto> SubmitSuspectAsync(int suspectId)
+    {
+        var caseSuspect = await context.CaseSuspects
+            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId)
+            ?? throw new EntityNotFoundException("CaseSuspect", suspectId);
+
+        caseSuspect.ApprovalStatus = ApprovalStatus.Pending;
+        await context.SaveChangesAsync();
+        
+        var suspect = await context.Suspects.FindAsync(suspectId);
+        var result = mapper.Map<SuspectDto>(suspect!);
+        result.ApprovalStatus = caseSuspect.ApprovalStatus;
+        return result;
+    }
     #endregion
 
     #region Expense
@@ -314,6 +395,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var expense = mapper.Map<Expense>(dto);
         expense.CaseId = caseId;
+        expense.ApprovalStatus = ApprovalStatus.Draft;
         context.Expenses.Add(expense);
         await context.SaveChangesAsync();
         return mapper.Map<ExpenseDto>(expense);
@@ -325,6 +407,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             ?? throw new EntityNotFoundException("Expense", expenseId);
 
         mapper.Map(dto, expense);
+        // Set status to Draft after edit
+        expense.ApprovalStatus = ApprovalStatus.Draft;
         await context.SaveChangesAsync();
         return mapper.Map<ExpenseDto>(expense);
     }
@@ -379,6 +463,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     {
         var report = mapper.Map<Report>(dto);
         report.CaseId = caseId;
+        report.ApprovalStatus = ApprovalStatus.Draft;
         context.Reports.Add(report);
         await context.SaveChangesAsync();
         return mapper.Map<ReportDto>(report);
@@ -390,6 +475,8 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             ?? throw new EntityNotFoundException("Report", reportId);
 
         mapper.Map(dto, report);
+        // Set status to Draft after edit
+        report.ApprovalStatus = ApprovalStatus.Draft;
         await context.SaveChangesAsync();
         return mapper.Map<ReportDto>(report);
     }

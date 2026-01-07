@@ -4,10 +4,12 @@ using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Detective.Reports;
 
 [Authorize(Policy = "DetectiveOnly")]
+[IgnoreAntiforgeryToken]
 public class EditModel(DetectiveService detectiveService) : PageModel
 {
     private readonly DetectiveService _detectiveService = detectiveService;

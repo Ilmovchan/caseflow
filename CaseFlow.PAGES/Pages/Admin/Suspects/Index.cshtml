@@ -17,7 +17,6 @@
             </a>
         }
     </form>
-    <a asp-page="Create" class="btn btn-primary">Створити нового підозрюваного</a>
 </div>
 
 <table id="suspects-table" class="table sortable-table paginated-table">
@@ -49,11 +48,11 @@
             <td class="approval-actions">
                 @if (s.ApprovalStatus.ToString() == "Pending")
                 {
-                    <button class="btn btn-sm btn-approve" data-id="@s.Id" data-type="suspect">
-                        <i class="fas fa-check"></i>
+                    <button class="btn btn-sm btn-success btn-approve" data-id="@s.Id" data-type="suspect" title="Схвалити">
+                        <i class="fas fa-check"></i> Схвалити
                     </button>
-                    <button class="btn btn-sm btn-reject" data-id="@s.Id" data-type="suspect">
-                        <i class="fas fa-times"></i>
+                    <button class="btn btn-sm btn-danger btn-reject" data-id="@s.Id" data-type="suspect" title="Відхилити">
+                        <i class="fas fa-times"></i> Відхилити
                     </button>
                 }
                 else

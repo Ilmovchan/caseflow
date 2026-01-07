@@ -173,7 +173,7 @@ public partial class DetectiveAgencyDbContext : DbContext
                     @"apartment_number IS NULL OR apartment_number > 0");
                 
                 t.HasCheckConstraint("detective_hire_date_format", 
-                    @"hire_date <= CURRENT_DATE");
+                    @"hire_date::date <= CURRENT_DATE");
                 
                 t.HasCheckConstraint("detective_salary_format", 
                     @"salary >= 0");

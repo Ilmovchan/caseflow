@@ -33,27 +33,6 @@
 
 <p>
     <a asp-page="Edit" asp-route-id="@Model.Case.Id" class="btn btn-primary">Редагувати</a>
-    <a asp-page="Index" class="btn btn-secondary">Назад до списку</a>
+    <a asp-page="Index" class="btn btn-secondary">Назад</a>
 </p>
-
-<h3>Призначення детектива</h3>
-<div class="mb-3">
-    <form method="post" asp-page-handler="Assign">
-        <input type="hidden" name="id" value="@Model.Case.Id" />
-        <div class="input-group" style="max-width: 420px;">
-            <select name="detectiveId" class="form-select">
-                @foreach (var d in Model.UnassignedDetectives)
-                {
-                    <option value="@d.Id">#@d.Id @d.LastName @d.FirstName</option>
-                }
-            </select>
-            <button type="submit" class="btn btn-outline-primary">Призначити</button>
-        </div>
-    </form>
-</div>
-
-<form method="post" asp-page-handler="Dismiss">
-    <input type="hidden" name="id" value="@Model.Case.Id" />
-    <button type="submit" class="btn btn-outline-warning" @(Model.Case.DetectiveId == null ? "disabled" : null)>Відсторонити детектива</button>
-</form>
 

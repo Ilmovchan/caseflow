@@ -5,10 +5,12 @@ using CaseFlow.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Detective.Reports;
 
 [Authorize(Policy = "DetectiveOnly")]
+[IgnoreAntiforgeryToken]
 public class IndexModel(DetectiveService detectiveService, IMapper mapper) : PageModel
 {
     private readonly DetectiveService _detectiveService = detectiveService;
@@ -35,7 +37,7 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
                 r.Id.ToString().Contains(term) ||
                 r.CaseId.ToString().Contains(term) ||
                 r.ReportDate.ToString().Contains(term) ||
-                r.ApprovalStatus.ToString().ToLower().Contains(term) ||
+                (r.ApprovalStatus?.ToString().ToLower() ?? "").Contains(term) ||
                 (!string.IsNullOrEmpty(r.Summary) && r.Summary.ToLower().Contains(term)))
                 .ToList();
         }
@@ -58,7 +60,7 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
         Reports = PagedReports.Items;
     }
 
-    public async Task<IActionResult> OnPostApproveAsync(int id)
+    public async Task<IActionResult> OnPostApproveAsync([FromQuery] int id)
     {
         try
         {
@@ -82,7 +84,7 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
         }
     }
 
-    public async Task<IActionResult> OnPostRejectAsync(int id)
+    public async Task<IActionResult> OnPostRejectAsync([FromQuery] int id)
     {
         try
         {

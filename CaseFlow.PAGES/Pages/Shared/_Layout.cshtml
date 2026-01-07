@@ -147,6 +147,61 @@
                                     <i class="fas fa-user-secret me-1"></i>Панель детектива
                                 </a>
                             </li>
+
+                            <!-- Справи — показывается только в разделе Cases -->
+                            @if (currentPage.StartsWith("/Detective/Cases"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Cases/Index">
+                                        <i class="fas fa-folder-open me-1"></i>Справи
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Звіти — показывается только в разделе Reports -->
+                            @if (currentPage.StartsWith("/Detective/Reports"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Reports/Index">
+                                        <i class="fas fa-file-alt me-1"></i>Звіти
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Докази — показывается только в разделе Evidence -->
+                            @if (currentPage.StartsWith("/Detective/Evidence"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Evidence/Index">
+                                        <i class="fas fa-fingerprint me-1"></i>Докази
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Підозрювані — показывается только в разделе Suspects -->
+                            @if (currentPage.StartsWith("/Detective/Suspects"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Suspects/Index">
+                                        <i class="fas fa-user-secret me-1"></i>Підозрювані
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Витрати — показывается только в разделе Expenses -->
+                            @if (currentPage.StartsWith("/Detective/Expenses"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Expenses/Index">
+                                        <i class="fas fa-dollar-sign me-1"></i>Видатки
+                                    </a>
+                                </li>
+                            }
                         }
                     }
                 </ul>

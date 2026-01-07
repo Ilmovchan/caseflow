@@ -48,8 +48,7 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 DateTime = utcDateTime,
                 Purpose = Input.Purpose,
                 Amount = Input.Amount,
-                Annotation = Input.Annotation,
-                Status = ApprovalStatus.Draft
+                Annotation = Input.Annotation
             };
 
             var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto);

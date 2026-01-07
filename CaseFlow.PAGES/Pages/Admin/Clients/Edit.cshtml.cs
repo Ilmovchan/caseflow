@@ -62,6 +62,47 @@ public class EditModel(AdminService adminService) : PageModel
             return Page();
         }
     }
+
+    public async Task<IActionResult> OnPostDeleteAsync()
+    {
+        try
+        {
+            await _adminService.DeleteClientAsync(Id);
+            return RedirectToPage("Index");
+        }
+        catch (CaseFlow.BLL.Exceptions.EntityDeleteConflictException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            var entity = await _adminService.GetClientAsync(Id);
+            if (entity == null) return RedirectToPage("Index");
+            
+            Id = entity.Id;
+            Input = new UpdateClientDto
+            {
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                FatherName = entity.FatherName,
+                Email = entity.Email,
+                PhoneNumber = entity.PhoneNumber,
+                DateOfBirth = entity.DateOfBirth,
+                Region = entity.Region,
+                City = entity.City,
+                Street = entity.Street,
+                BuildingNumber = entity.BuildingNumber,
+                ApartmentNumber = entity.ApartmentNumber
+            };
+            return Page();
+        }
+        catch (CaseFlow.BLL.Exceptions.EntityNotFoundException)
+        {
+            return RedirectToPage("Index");
+        }
+        catch
+        {
+            ModelState.AddModelError(string.Empty, "An error occurred while deleting the client. Please try again.");
+            return Page();
+        }
+    }
 }
 
 

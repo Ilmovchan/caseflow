@@ -12,6 +12,7 @@ public class EvidenceCaseDto
     public DateTime CollectionDate { get; set; }
     public string Region { get; set; } = "Не вказано";
     public string? Annotation { get; set; }
-    public string? Purpose { get; set; } 
+    public string? Purpose { get; set; }
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
     
 }
