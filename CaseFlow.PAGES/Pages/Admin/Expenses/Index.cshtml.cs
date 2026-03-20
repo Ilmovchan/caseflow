@@ -6,9 +6,11 @@ using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Admin.Expenses;
 
+[IgnoreAntiforgeryToken]
 public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 {
     private readonly AdminService _adminService = adminService;
@@ -27,22 +29,40 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        PagedResult<Expense> pagedResult;
+        // Get all expenses first
+        List<Expense> allExpenses;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
-            pagedResult = await _adminService.SearchExpensesPagedAsync(SearchTerm, pageNumber, PageSize);
+            var searchResult = await _adminService.SearchExpensesPagedAsync(SearchTerm, 1, int.MaxValue);
+            allExpenses = searchResult.Items;
         }
         else
         {
-            pagedResult = await _adminService.GetExpensesPagedAsync(pageNumber, PageSize);
+            var allResult = await _adminService.GetExpensesPagedAsync(1, int.MaxValue);
+            allExpenses = allResult.Items;
         }
+
+        // Filter: Admin can only see Pending and Approved items (not Draft or Declined)
+        // Draft: Only detective who created it can see
+        // Declined: Only detective can see (to edit and resubmit)
+        var filteredItems = allExpenses
+            .Where(e => e.ApprovalStatus == ApprovalStatus.Pending || e.ApprovalStatus == ApprovalStatus.Approved)
+            .ToList();
+
+        // Apply pagination to filtered items
+        var totalCount = filteredItems.Count;
+        var items = filteredItems
+            .OrderBy(e => e.Id)
+            .Skip((pageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
 
         PagedExpenses = new PagedResult<ExpenseDto>
         {
-            Items = _mapper.Map<List<ExpenseDto>>(pagedResult.Items),
-            TotalCount = pagedResult.TotalCount,
-            PageNumber = pagedResult.PageNumber,
-            PageSize = pagedResult.PageSize
+            Items = _mapper.Map<List<ExpenseDto>>(items),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = PageSize
         };
 
         AllExpenses = PagedExpenses.Items;

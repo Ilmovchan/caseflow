@@ -1,13 +1,12 @@
 using CaseFlow.BLL.Dto.Case;
-using CaseFlow.BLL.Dto.Expense;
+using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
-using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace CaseFlow.PAGES.Pages.Detective.Expenses;
+namespace CaseFlow.PAGES.Pages.Detective.Suspects;
 
 [Authorize(Policy = "DetectiveOnly")]
 public class CreateModel(DetectiveService detectiveService) : PageModel
@@ -15,7 +14,7 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
     private readonly DetectiveService _detectiveService = detectiveService;
 
     [BindProperty]
-    public CreateExpenseInputModel Input { get; set; } = new();
+    public CreateSuspectInputModel Input { get; set; } = new();
 
     public List<CaseDto> Cases { get; set; } = new();
 
@@ -41,34 +40,31 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
         try
         {
-            // Convert local datetime to UTC for PostgreSQL
-            // datetime-local inputs return DateTime with Kind=Unspecified
-            var utcDateTime = Input.DateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(Input.DateTime, DateTimeKind.Local).ToUniversalTime()
-                : Input.DateTime.Kind == DateTimeKind.Local
-                    ? Input.DateTime.ToUniversalTime()
-                    : Input.DateTime;
-
-            var dto = new CreateExpenseDto
+            var dto = new CreateSuspectDto
             {
-                DateTime = utcDateTime,
-                Purpose = Input.Purpose,
-                Amount = Input.Amount,
-                Annotation = Input.Annotation
+                FirstName = Input.FirstName,
+                LastName = Input.LastName,
+                FatherName = Input.FatherName,
+                Nickname = Input.Nickname,
+                PhoneNumber = Input.PhoneNumber,
+                DateOfBirth = Input.DateOfBirth,
+                Region = Input.Region,
+                City = Input.City,
+                Street = Input.Street,
+                BuildingNumber = Input.BuildingNumber,
+                ApartmentNumber = Input.ApartmentNumber,
+                Height = Input.Height,
+                Weight = Input.Weight,
+                PhysicalDescription = Input.PhysicalDescription,
+                PriorConvictions = Input.PriorConvictions
             };
 
-            var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto);
+            var created = await _detectiveService.CreateSuspectAsync(Input.CaseId, dto);
             return RedirectToPage("Details", new { id = created.Id });
         }
         catch (EntityNotFoundException ex)
         {
             ModelState.AddModelError(string.Empty, $"Справа не знайдена: {ex.Message}");
-            await OnGetAsync();
-            return Page();
-        }
-        catch (ArgumentException ex) when (ex.Message.Contains("DateTime with Kind=Local") || ex.Message.Contains("DateTime with Kind=Unspecified"))
-        {
-            ModelState.AddModelError(string.Empty, "Помилка з датою/часом. Спробуйте ще раз.");
             await OnGetAsync();
             return Page();
         }
@@ -82,19 +78,31 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 return Page();
             }
 
-            ModelState.AddModelError(string.Empty, "Помилка при створенні видатків. Спробуйте ще раз.");
+            ModelState.AddModelError(string.Empty, "Помилка при створенні підозрюваного. Спробуйте ще раз.");
             await OnGetAsync();
             return Page();
         }
     }
 }
 
-public class CreateExpenseInputModel
+public class CreateSuspectInputModel
 {
     public int CaseId { get; set; }
-    public DateTime DateTime { get; set; } = DateTime.Now;
-    public string Purpose { get; set; } = null!;
-    public decimal Amount { get; set; }
-    public string? Annotation { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? FatherName { get; set; }
+    public string? Nickname { get; set; }
+    public string? PhoneNumber { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Region { get; set; }
+    public string? City { get; set; }
+    public string? Street { get; set; }
+    public string? BuildingNumber { get; set; }
+    public int? ApartmentNumber { get; set; }
+    public int? Height { get; set; }
+    public int? Weight { get; set; }
+    public string? PhysicalDescription { get; set; }
+    public string? PriorConvictions { get; set; }
 }
+
 

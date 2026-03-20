@@ -6,9 +6,11 @@ using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Admin.Reports;
 
+[IgnoreAntiforgeryToken]
 public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 {
     private readonly AdminService _adminService = adminService;
@@ -27,22 +29,40 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        PagedResult<Report> pagedResult;
+        // Get all reports first
+        List<Report> allReports;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
-            pagedResult = await _adminService.SearchReportsPagedAsync(SearchTerm, pageNumber, PageSize);
+            var searchResult = await _adminService.SearchReportsPagedAsync(SearchTerm, 1, int.MaxValue);
+            allReports = searchResult.Items;
         }
         else
         {
-            pagedResult = await _adminService.GetReportsPagedAsync(pageNumber, PageSize);
+            var allResult = await _adminService.GetReportsPagedAsync(1, int.MaxValue);
+            allReports = allResult.Items;
         }
+
+        // Filter: Admin can only see Pending and Approved items (not Draft or Declined)
+        // Draft: Only detective who created it can see
+        // Declined: Only detective can see (to edit and resubmit)
+        var filteredItems = allReports
+            .Where(r => r.ApprovalStatus == ApprovalStatus.Pending || r.ApprovalStatus == ApprovalStatus.Approved)
+            .ToList();
+
+        // Apply pagination to filtered items
+        var totalCount = filteredItems.Count;
+        var items = filteredItems
+            .OrderBy(r => r.Id)
+            .Skip((pageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
 
         PagedReports = new PagedResult<ReportDto>
         {
-            Items = _mapper.Map<List<ReportDto>>(pagedResult.Items),
-            TotalCount = pagedResult.TotalCount,
-            PageNumber = pagedResult.PageNumber,
-            PageSize = pagedResult.PageSize
+            Items = _mapper.Map<List<ReportDto>>(items),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = PageSize
         };
 
         AllReports = PagedReports.Items;

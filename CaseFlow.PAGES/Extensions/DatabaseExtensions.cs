@@ -13,10 +13,6 @@ public static class DatabaseExtensions
         var connString = configuration.GetConnectionString("DetectiveAgencyDb");
 
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connString);
-        dataSourceBuilder.MapEnum<CaseStatus>("case_status");
-        dataSourceBuilder.MapEnum<DetectiveStatus>("detective_status");
-        dataSourceBuilder.MapEnum<EvidenceType>("evidence_type");
-        dataSourceBuilder.MapEnum<ApprovalStatus>("approval_status");
         dataSourceBuilder.EnableUnmappedTypes();
 
         var dataSource = dataSourceBuilder.Build();

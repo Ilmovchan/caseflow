@@ -35,6 +35,7 @@ async function handleApproval(id, type, action) {
   const row = document.querySelector(`[data-id="${id}"]`).closest("tr");
   const actionCell = row.querySelector(".approval-actions");
   const originalContent = actionCell ? actionCell.innerHTML : "";
+  const isEvidence = type === "evidence";
   try {
     // Show loading state
     if (actionCell) {
@@ -66,15 +67,22 @@ async function handleApproval(id, type, action) {
       }
     } else {
       // Admin panel endpoints
-      // For Draft items: approve = Submit, reject = Delete
-      // For Pending items: approve = Approve, reject = Reject
-      const handler = isDraft
-        ? action === "approve"
-          ? "Submit"
-          : "Delete"
-        : action === "approve"
-        ? "Approve"
-        : "Reject";
+      // For Evidence: Admin only sees Pending items, so always use Approve/Reject
+      // For other types: Draft items use Submit/Delete, Pending items use Approve/Reject
+      let handler;
+      if (type === "evidence") {
+        // Evidence: Admin only sees Pending items, always use Approve/Reject
+        handler = action === "approve" ? "Approve" : "Reject";
+      } else {
+        // Other types: Draft = Submit/Delete, Pending = Approve/Reject
+        handler = isDraft
+          ? action === "approve"
+            ? "Submit"
+            : "Delete"
+          : action === "approve"
+          ? "Approve"
+          : "Reject";
+      }
 
       if (type === "expense") {
         endpoint = `/Admin/Expenses?handler=${handler}&id=${id}`;
@@ -108,8 +116,16 @@ async function handleApproval(id, type, action) {
     const result = await response.json();
     console.log("Response data:", result);
 
-    // Handle delete/reject action (removes row)
-    if (action === "reject" && result.success && result.message) {
+    const isDetectivePage = window.location.pathname.includes("/Detective/");
+
+    // Handle reject action for Evidence, Suspects, Expenses, and Reports in Admin panel (removes row since Declined items are not visible to admin)
+    if (!isDetectivePage && (type === "evidence" || type === "suspect" || type === "expense" || type === "report") && action === "reject" && result.success) {
+      // Remove the row from the table (Declined items are not visible to admin)
+      row.remove();
+      showNotification("Відхилено успішно!", "success");
+    }
+    // Handle delete/reject action for other types (removes row)
+    else if (action === "reject" && result.success && result.message) {
       // Remove the row from the table
       row.remove();
       showNotification(result.message, "success");
@@ -123,19 +139,19 @@ async function handleApproval(id, type, action) {
       );
 
       // Show success message
-      const isDetectivePage = window.location.pathname.includes("/Detective/");
       let message;
 
       if (isDetectivePage) {
         message = result.message || "Надіслано на перевірку успішно!";
       } else {
         // Admin panel
-        if (isDraft && action === "approve") {
+        if (isEvidence) {
+          // Evidence: Always show approve/reject message
+          message = `${action === "approve" ? "Схвалено" : "Відхилено"} успішно!`;
+        } else if (isDraft && action === "approve") {
           message = result.message || "Надіслано на перевірку успішно!";
         } else {
-          message = `${
-            action === "approve" ? "Схвалено" : "Відхилено"
-          } успішно!`;
+          message = `${action === "approve" ? "Схвалено" : "Відхилено"} успішно!`;
         }
       }
 

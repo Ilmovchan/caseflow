@@ -6,9 +6,11 @@ using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CaseFlow.PAGES.Pages.Admin.Suspects;
 
+[IgnoreAntiforgeryToken]
 public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 {
     private readonly AdminService _adminService = adminService;
@@ -27,22 +29,40 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        PagedResult<Suspect> pagedResult;
+        // Get all suspects first
+        List<Suspect> allSuspects;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
-            pagedResult = await _adminService.SearchSuspectsPagedAsync(SearchTerm, pageNumber, PageSize);
+            var searchResult = await _adminService.SearchSuspectsPagedAsync(SearchTerm, 1, int.MaxValue);
+            allSuspects = searchResult.Items;
         }
         else
         {
-            pagedResult = await _adminService.GetSuspectsPagedAsync(pageNumber, PageSize);
+            var allResult = await _adminService.GetSuspectsPagedAsync(1, int.MaxValue);
+            allSuspects = allResult.Items;
         }
+
+        // Filter: Admin can only see Pending and Approved items (not Draft or Declined)
+        // Draft: Only detective who created it can see
+        // Declined: Only detective can see (to edit and resubmit)
+        var filteredItems = allSuspects
+            .Where(s => s.ApprovalStatus == ApprovalStatus.Pending || s.ApprovalStatus == ApprovalStatus.Approved)
+            .ToList();
+
+        // Apply pagination to filtered items
+        var totalCount = filteredItems.Count;
+        var items = filteredItems
+            .OrderBy(s => s.Id)
+            .Skip((pageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
 
         PagedSuspects = new PagedResult<SuspectDto>
         {
-            Items = _mapper.Map<List<SuspectDto>>(pagedResult.Items),
-            TotalCount = pagedResult.TotalCount,
-            PageNumber = pagedResult.PageNumber,
-            PageSize = pagedResult.PageSize
+            Items = _mapper.Map<List<SuspectDto>>(items),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = PageSize
         };
 
         AllSuspects = PagedSuspects.Items;

@@ -72,7 +72,11 @@
             </div>
 
             <div class="col-lg-4 col-md-6">
-                <div class="admin-panel-card">
+                <div class="admin-panel-card position-relative">
+                    @if (Model.PendingEvidenceCount > 0)
+                    {
+                        <span class="badge-notification">@Model.PendingEvidenceCount</span>
+                    }
                     <div class="card-icon"><i class="fas fa-fingerprint"></i></div>
                     <div class="card-content">
                         <h3 class="card-title">Докази</h3>
@@ -86,7 +90,11 @@
             </div>
 
             <div class="col-lg-4 col-md-6">
-                <div class="admin-panel-card">
+                <div class="admin-panel-card position-relative">
+                    @if (Model.PendingSuspectsCount > 0)
+                    {
+                        <span class="badge-notification">@Model.PendingSuspectsCount</span>
+                    }
                     <div class="card-icon"><i class="fas fa-user-secret"></i></div>
                     <div class="card-content">
                         <h3 class="card-title">Підозрювані</h3>
@@ -100,7 +108,11 @@
             </div>
 
             <div class="col-lg-4 col-md-6">
-                <div class="admin-panel-card">
+                <div class="admin-panel-card position-relative">
+                    @if (Model.PendingExpensesCount > 0)
+                    {
+                        <span class="badge-notification">@Model.PendingExpensesCount</span>
+                    }
                     <div class="card-icon"><i class="fas fa-dollar-sign"></i></div>
                     <div class="card-content">
                         <h3 class="card-title">Витрати</h3>
@@ -114,7 +126,11 @@
             </div>
 
             <div class="col-lg-4 col-md-6">
-                <div class="admin-panel-card">
+                <div class="admin-panel-card position-relative">
+                    @if (Model.PendingReportsCount > 0)
+                    {
+                        <span class="badge-notification">@Model.PendingReportsCount</span>
+                    }
                     <div class="card-icon"><i class="fas fa-file-alt"></i></div>
                     <div class="card-content">
                         <h3 class="card-title">Звіти</h3>

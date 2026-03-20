@@ -13,6 +13,7 @@ using CaseFlow.DAL.Data;
 using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CaseFlow.BLL.Services;
 
@@ -118,9 +119,38 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
 
         var caseEntity = mapper.Map<Case>(dto);
         context.Cases.Add(caseEntity);
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+                                              pg.SqlState == "23505" &&
+                                              string.Equals(pg.ConstraintName, "PK_case", StringComparison.OrdinalIgnoreCase))
+        {
+            // Sequence may be out of sync with existing rows; reseed and retry once.
+            await ReseedCaseIdSequenceAsync();
+            await context.SaveChangesAsync();
+        }
 
         return caseEntity;
+    }
+
+    private Task ReseedCaseIdSequenceAsync()
+    {
+        return context.Database.ExecuteSqlRawAsync(@"
+DO $$
+DECLARE seq text;
+BEGIN
+    seq := pg_get_serial_sequence('case', 'id');
+    IF seq IS NOT NULL THEN
+        PERFORM setval(
+            seq::regclass,
+            COALESCE((SELECT MAX(id) FROM ""case""), 0),
+            true
+        );
+    END IF;
+END $$;
+");
     }
 
     public async Task<Case> UpdateCaseAsync(int id, UpdateCaseByAdminDto dto)
@@ -331,12 +361,39 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
         detectiveEntity.HireDate = DateTime.UtcNow;
 
         context.Detectives.Add(detectiveEntity);
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+                                              pg.SqlState == "23505" &&
+                                              string.Equals(pg.ConstraintName, "PK_detective", StringComparison.OrdinalIgnoreCase))
+        {
+            // Sequence may be out of sync with existing rows; reseed and retry once.
+            await ReseedDetectiveIdSequenceAsync();
+            await context.SaveChangesAsync();
+        }
 
         // PostgreSQL: CREATE ROLE detective_ivanov LOGIN PASSWORD '...' INHERIT;
         // GRANT detective TO detective_ivanov;
 
         return detectiveEntity;
+    }
+
+    private Task ReseedDetectiveIdSequenceAsync()
+    {
+        return context.Database.ExecuteSqlRawAsync(@"
+DO $$
+BEGIN
+    IF pg_get_serial_sequence('detective', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('detective', 'id'),
+            COALESCE((SELECT MAX(id) FROM detective), 0),
+            true
+        );
+    END IF;
+END $$;
+");
     }
 
     public async Task<Detective> UpdateDetectiveAsync(int id, UpdateDetectiveDto dto)
