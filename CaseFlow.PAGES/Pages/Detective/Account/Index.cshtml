@@ -1,0 +1,69 @@
+@page
+@model CaseFlow.PAGES.Pages.Detective.Account.IndexModel
+@{
+    ViewData["Title"] = "Мій акаунт";
+}
+
+<h2>Мій акаунт</h2>
+
+@if (Model.Detective == null)
+{
+    <div class="alert alert-warning">
+        Дані детектива для цього акаунта не знайдено.
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-3">Логін</dt>
+        <dd class="col-sm-9">@(Model.Username ?? "-")</dd>
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@(Model.UserEmail ?? "-")</dd>
+    </dl>
+}
+else
+{
+    <dl class="row">
+        <dt class="col-sm-3">ID</dt>
+        <dd class="col-sm-9">@Model.Detective.Id</dd>
+
+        <dt class="col-sm-3">Ім'я</dt>
+        <dd class="col-sm-9">@Model.Detective.FirstName</dd>
+
+        <dt class="col-sm-3">Прізвище</dt>
+        <dd class="col-sm-9">@Model.Detective.LastName</dd>
+
+        <dt class="col-sm-3">По батькові</dt>
+        <dd class="col-sm-9">@(Model.Detective.FatherName ?? "-")</dd>
+
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@Model.Detective.Email</dd>
+
+        <dt class="col-sm-3">Телефон</dt>
+        <dd class="col-sm-9">@Model.Detective.PhoneNumber</dd>
+
+        <dt class="col-sm-3">Статус</dt>
+        <dd class="col-sm-9">@Model.Detective.Status</dd>
+
+        <dt class="col-sm-3">Дата найму</dt>
+        <dd class="col-sm-9">@Model.Detective.HireDate</dd>
+
+        <dt class="col-sm-3">Зарплата</dt>
+        <dd class="col-sm-9">@Model.Detective.Salary</dd>
+
+        <dt class="col-sm-3">Адреса</dt>
+        <dd class="col-sm-9">
+            @Model.Detective.Region, @Model.Detective.City, @Model.Detective.Street @Model.Detective.BuildingNumber
+            @if (Model.Detective.ApartmentNumber.HasValue)
+            {
+                <span>, кв. @Model.Detective.ApartmentNumber</span>
+            }
+        </dd>
+
+        <dt class="col-sm-3">Дата народження</dt>
+        <dd class="col-sm-9">@Model.Detective.DateOfBirth</dd>
+
+        <dt class="col-sm-3">Примітки</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Detective.PersonalNotes) ? "-" : Model.Detective.PersonalNotes)</dd>
+    </dl>
+}
+
+<a asp-page="/Detective/Index" class="btn btn-secondary">Назад</a>

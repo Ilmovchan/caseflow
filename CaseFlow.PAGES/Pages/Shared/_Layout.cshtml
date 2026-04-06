@@ -1,4 +1,4 @@
-﻿@{
+@{
     string currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
 }
 
@@ -202,6 +202,16 @@
                                     </a>
                                 </li>
                             }
+
+                            @if (currentPage.StartsWith("/Detective/Account"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Account/Index">
+                                        <i class="fas fa-id-badge me-1"></i>Мій акаунт
+                                    </a>
+                                </li>
+                            }
                         }
                     }
                 </ul>
@@ -223,6 +233,22 @@
                                 }
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Admin/DetectiveAccounts/Create">
+                                            <i class="fas fa-user-plus me-1"></i>Створити акаунт детектива
+                                        </a>
+                                    </li>
+                                }
+                                @if (User.IsInRole("Detective"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Detective/Account/Index">
+                                            <i class="fas fa-id-badge me-1"></i>Мій акаунт
+                                        </a>
+                                    </li>
+                                }
                                 <li>
                                     <a class="dropdown-item" asp-page="/Auth/Logout">
                                         <i class="fas fa-sign-out-alt me-1"></i>Вихід

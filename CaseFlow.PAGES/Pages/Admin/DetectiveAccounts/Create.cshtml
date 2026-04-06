@@ -1,0 +1,72 @@
+@page
+@model CaseFlow.PAGES.Pages.Admin.DetectiveAccounts.CreateModel
+@{
+    ViewData["Title"] = "Створити акаунт детектива";
+}
+
+<h2>Створити акаунт детектива</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach (var modelState in ViewData.ModelState.Values)
+        {
+            @foreach (var error in modelState.Errors)
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model.DetectiveOptions.Count == 0)
+{
+    <div class="alert alert-info">
+        Всі детективи вже мають акаунти, або детективів ще не створено.
+    </div>
+}
+else
+{
+    <form method="post">
+        <div class="mb-3">
+            <label asp-for="Input.DetectiveId" class="form-label">Детектив</label>
+            <select asp-for="Input.DetectiveId" asp-items="Model.DetectiveOptions" class="form-select">
+                <option value="">-- Оберіть детектива --</option>
+            </select>
+            <span asp-validation-for="Input.DetectiveId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Username" class="form-label">Логін</label>
+            <input asp-for="Input.Username" class="form-control" placeholder="Наприклад: detective_ivanov" />
+            <small class="text-muted">Лише латиниця, цифри та _</small>
+            <span asp-validation-for="Input.Username" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Password" class="form-label">Пароль</label>
+            <input asp-for="Input.Password" type="password" class="form-control" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.ConfirmPassword" class="form-label">Підтвердження паролю</label>
+            <input asp-for="Input.ConfirmPassword" type="password" class="form-control" />
+            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Створити акаунт</button>
+        <a asp-page="/Admin/Index" class="btn btn-secondary">Скасувати</a>
+    </form>
+}
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />

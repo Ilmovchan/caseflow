@@ -14,6 +14,9 @@ using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CaseFlow.BLL.Services;
 
@@ -380,6 +383,54 @@ END $$;
         return detectiveEntity;
     }
 
+    public async Task<List<Detective>> GetDetectivesWithoutAccountsAsync() =>
+        await context.Detectives
+            .Where(d => !context.Users.Any(u =>
+                u.Role == "Detective" &&
+                u.Email.ToLower() == d.Email.ToLower()))
+            .OrderBy(d => d.LastName)
+            .ThenBy(d => d.FirstName)
+            .ToListAsync();
+
+    public async Task<User> CreateDetectiveAccountAsync(int detectiveId, string username, string password)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username is required");
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password is required");
+        if (password.Length < 6)
+            throw new ArgumentException("Password must be at least 6 characters");
+
+        username = username.Trim();
+        if (!Regex.IsMatch(username, "^[a-zA-Z0-9_]+$"))
+            throw new ArgumentException("Username can contain only English letters, numbers, and underscore");
+
+        var detective = await context.Detectives.FindAsync(detectiveId)
+            ?? throw new EntityNotFoundException("Detective", detectiveId);
+
+        var usernameExists = await context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower());
+        if (usernameExists)
+            throw new InvalidOperationException("This username is already taken");
+
+        var emailExists = await context.Users.AnyAsync(u => u.Email.ToLower() == detective.Email.ToLower());
+        if (emailExists)
+            throw new InvalidOperationException("An account for this detective already exists");
+
+        var user = new User
+        {
+            Username = username,
+            Email = detective.Email,
+            PasswordHash = HashPassword(password),
+            Role = "Detective",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        return user;
+    }
+
     private Task ReseedDetectiveIdSequenceAsync()
     {
         return context.Database.ExecuteSqlRawAsync(@"
@@ -446,6 +497,13 @@ END $$;
     }
 
     #endregion
+
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(hashedBytes);
+    }
 
     #region Evidence
 

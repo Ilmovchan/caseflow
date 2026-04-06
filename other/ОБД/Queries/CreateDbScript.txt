@@ -1,0 +1,299 @@
+-- Table: public.address
+
+-- DROP TABLE IF EXISTS public.address;
+
+CREATE TABLE IF NOT EXISTS public.address
+(
+    id integer NOT NULL DEFAULT nextval('address_id_seq'::regclass),
+    region character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    city character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    street character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    building_number character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    apartment_number integer,
+    CONSTRAINT address_pkey PRIMARY KEY (id),
+    CONSTRAINT region_format CHECK (region::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text),
+    CONSTRAINT city_format CHECK (city::text ~ '^[А-ЯІЇЄа-яіїє\-]+$'::text),
+    CONSTRAINT street_format CHECK (street::text ~ '^[А-ЯІЇЄа-яіїє\-]+$'::text),
+    CONSTRAINT building_number_format CHECK (building_number::text ~ '^[0-9\/]+$'::text),
+    CONSTRAINT apartment_number_format CHECK (apartment_number > 0)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.address
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.case
+
+-- DROP TABLE IF EXISTS public."case";
+
+CREATE TABLE IF NOT EXISTS public."case"
+(
+    id integer NOT NULL DEFAULT nextval('case_id_seq'::regclass),
+    client_id integer NOT NULL,
+    detective_id integer NOT NULL,
+    case_type_id integer NOT NULL,
+    title character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default" NOT NULL,
+    start_date date NOT NULL DEFAULT CURRENT_DATE,
+    close_date date,
+    deadline_date date NOT NULL,
+    status case_status,
+    CONSTRAINT case_pkey PRIMARY KEY (id),
+    CONSTRAINT case_case_type_id_fkey FOREIGN KEY (case_type_id)
+        REFERENCES public.case_type (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT case_client_id_fkey FOREIGN KEY (client_id)
+        REFERENCES public.client (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT case_detective_id_fkey FOREIGN KEY (detective_id)
+        REFERENCES public.detective (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT close_date_format CHECK (close_date >= start_date),
+    CONSTRAINT deadline_format CHECK (deadline_date >= start_date) NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public."case"
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.case_evidence
+
+-- DROP TABLE IF EXISTS public.case_evidence;
+
+CREATE TABLE IF NOT EXISTS public.case_evidence
+(
+    case_id integer NOT NULL,
+    evidence_id integer NOT NULL,
+    CONSTRAINT case_evidence_pkey PRIMARY KEY (case_id, evidence_id),
+    CONSTRAINT case_evidence_case_id_fkey FOREIGN KEY (case_id)
+        REFERENCES public."case" (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT case_evidence_evidence_id_fkey FOREIGN KEY (evidence_id)
+        REFERENCES public.evidence (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.case_evidence
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.case_suspect
+
+-- DROP TABLE IF EXISTS public.case_suspect;
+
+CREATE TABLE IF NOT EXISTS public.case_suspect
+(
+    case_id integer NOT NULL,
+    suspect_id integer NOT NULL,
+    is_interrogated boolean NOT NULL,
+    alibi text COLLATE pg_catalog."default",
+    CONSTRAINT case_suspect_pkey PRIMARY KEY (case_id, suspect_id),
+    CONSTRAINT case_suspect_case_id_fkey FOREIGN KEY (case_id)
+        REFERENCES public."case" (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT case_suspect_suspect_id_fkey FOREIGN KEY (suspect_id)
+        REFERENCES public.suspect (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.case_suspect
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.case_type
+
+-- DROP TABLE IF EXISTS public.case_type;
+
+CREATE TABLE IF NOT EXISTS public.case_type
+(
+    id integer NOT NULL DEFAULT nextval('case_type_id_seq'::regclass),
+    name character varying(50) COLLATE pg_catalog."default",
+    price integer NOT NULL,
+    CONSTRAINT case_type_pkey PRIMARY KEY (id),
+    CONSTRAINT price_format CHECK (price > 0)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.case_type
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.client
+
+-- DROP TABLE IF EXISTS public.client;
+
+CREATE TABLE IF NOT EXISTS public.client
+(
+    id integer NOT NULL DEFAULT nextval('client_id_seq'::regclass),
+    address_id integer,
+    first_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    last_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    father_name character varying(50) COLLATE pg_catalog."default",
+    phone_number character varying(20) COLLATE pg_catalog."default",
+    email character varying(100) COLLATE pg_catalog."default",
+    date_of_birth date NOT NULL,
+    registration_date date DEFAULT CURRENT_DATE,
+    CONSTRAINT client_pkey PRIMARY KEY (id),
+    CONSTRAINT client_address_id_fkey FOREIGN KEY (address_id)
+        REFERENCES public.address (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT name_format CHECK (first_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND last_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND father_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text),
+    CONSTRAINT date_of_birth_format CHECK (date_of_birth <= CURRENT_DATE)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.client
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.detective
+
+-- DROP TABLE IF EXISTS public.detective;
+
+CREATE TABLE IF NOT EXISTS public.detective
+(
+    id integer NOT NULL DEFAULT nextval('detective_id_seq'::regclass),
+    address_id integer,
+    first_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    last_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    father_name character varying(50) COLLATE pg_catalog."default",
+    phone_number character varying(20) COLLATE pg_catalog."default",
+    email character varying(100) COLLATE pg_catalog."default",
+    date_of_birth date NOT NULL,
+    hire_date date NOT NULL,
+    salary integer NOT NULL,
+    personal_notes text COLLATE pg_catalog."default",
+    status detective_status,
+    CONSTRAINT detective_pkey PRIMARY KEY (id),
+    CONSTRAINT detective_address_id_fkey FOREIGN KEY (address_id)
+        REFERENCES public.address (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT name_format CHECK (first_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND last_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND father_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text),
+    CONSTRAINT date_of_birth_format CHECK (date_of_birth <= CURRENT_DATE),
+    CONSTRAINT hire_date_format CHECK (hire_date <= CURRENT_DATE),
+    CONSTRAINT salary_format CHECK (salary >= 0)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.detective
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.evidence
+
+-- DROP TABLE IF EXISTS public.evidence;
+
+CREATE TABLE IF NOT EXISTS public.evidence
+(
+    id integer NOT NULL DEFAULT nextval('evidence_id_seq'::regclass),
+    description text COLLATE pg_catalog."default" NOT NULL,
+    type character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    collection_date date NOT NULL,
+    CONSTRAINT evidence_pkey PRIMARY KEY (id),
+    CONSTRAINT collected_date_format CHECK (collection_date <= CURRENT_DATE),
+    CONSTRAINT evidence_type_format CHECK (type::text ~ '^[А-ЯІЇЄа-яіїє\s\-\.,:;]+$'::text)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.evidence
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.report
+
+-- DROP TABLE IF EXISTS public.report;
+
+CREATE TABLE IF NOT EXISTS public.report
+(
+    id integer NOT NULL DEFAULT nextval('report_id_seq'::regclass),
+    case_id integer,
+    detective_id integer,
+    report_date date DEFAULT CURRENT_DATE,
+    summary text COLLATE pg_catalog."default" NOT NULL,
+    comments text COLLATE pg_catalog."default",
+    CONSTRAINT report_pkey PRIMARY KEY (id),
+    CONSTRAINT report_case_id_fkey FOREIGN KEY (case_id)
+        REFERENCES public."case" (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT report_detective_id_fkey FOREIGN KEY (detective_id)
+        REFERENCES public.detective (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT report_date_format CHECK (report_date <= CURRENT_DATE),
+    CONSTRAINT summary_format CHECK (summary ~ '^[А-ЯІЇЄа-яіїєA-Za-z0-9\s\-\.,:;]+$'::text),
+    CONSTRAINT comments_format CHECK (comments ~ '^[А-ЯІЇЄа-яіїєA-Za-z0-9\s\-\.,:;]+$'::text)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.report
+    OWNER to postgres;
+
+——————————————————————————————————
+
+-- Table: public.suspect
+
+-- DROP TABLE IF EXISTS public.suspect;
+
+CREATE TABLE IF NOT EXISTS public.suspect
+(
+    id integer NOT NULL DEFAULT nextval('suspect_id_seq'::regclass),
+    address_id integer,
+    first_name character varying(50) COLLATE pg_catalog."default",
+    last_name character varying(50) COLLATE pg_catalog."default",
+    father_name character varying(50) COLLATE pg_catalog."default",
+    nickname character varying(50) COLLATE pg_catalog."default",
+    date_of_birth date,
+    height integer,
+    weight integer,
+    physical_description text COLLATE pg_catalog."default",
+    prior_convictions text COLLATE pg_catalog."default",
+    CONSTRAINT suspect_pkey PRIMARY KEY (id),
+    CONSTRAINT suspect_address_id_fkey FOREIGN KEY (address_id)
+        REFERENCES public.address (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT name_format CHECK (first_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND last_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND father_name::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text AND nickname::text ~ '^[А-ЯІЇЄа-яіїє]+$'::text),
+    CONSTRAINT date_of_birth_format CHECK (date_of_birth <= CURRENT_DATE),
+    CONSTRAINT height_format CHECK (height > 0 AND height < 300),
+    CONSTRAINT weight_format CHECK (weight > 0 AND weight < 500),
+    CONSTRAINT physical_description_format CHECK (physical_description ~ '^[А-ЯІЇЄа-яіїє\s\-\.,:;]+$'::text),
+    CONSTRAINT prior_convictions_format CHECK (prior_convictions ~ '^[А-ЯІЇЄа-яіїє\s\-\.,:;]+$'::text)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.suspect
+    OWNER to postgres;
+
+——————————————————————————————————

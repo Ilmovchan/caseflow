@@ -49,6 +49,11 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.Clients.ToListAsync();
     #endregion
 
+    #region DetectiveAccount
+    public async Task<Detective?> GetDetectiveByEmailAsync(string email) =>
+        await context.Detectives.FirstOrDefaultAsync(d => d.Email.ToLower() == email.ToLower());
+    #endregion
+
     #region Evidence
     public async Task<EvidenceCaseDto> CreateEvidenceAsync(int caseId, CreateEvidenceDto dto)
     {
