@@ -32,8 +32,19 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        // Validate collection date is not in the future
-        if (Input.CollectionDate > DateTime.UtcNow)
+        // Normalize to minute precision (drop seconds/milliseconds).
+        var normalizedLocalDate = new DateTime(
+                Input.CollectionDate.Year,
+                Input.CollectionDate.Month,
+                Input.CollectionDate.Day,
+                Input.CollectionDate.Hour,
+                Input.CollectionDate.Minute,
+                0,
+                DateTimeKind.Unspecified
+            );
+
+        // Validate against local time first (datetime-local is user local time, e.g. Kyiv).
+        if (normalizedLocalDate > DateTime.Now)
         {
             ModelState.AddModelError(nameof(Input.CollectionDate), "Дата збору не може бути в майбутньому");
         }
@@ -46,20 +57,12 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
         try
         {
-            // Convert local datetime to UTC for PostgreSQL
-            var utcCollectionDate = Input.CollectionDate.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(Input.CollectionDate, DateTimeKind.Local).ToUniversalTime()
-                : Input.CollectionDate.Kind == DateTimeKind.Local
-                    ? Input.CollectionDate.ToUniversalTime()
-                    : Input.CollectionDate;
-
-            // Double-check the date is not in the future after conversion
-            if (utcCollectionDate > DateTime.UtcNow)
-            {
-                ModelState.AddModelError(nameof(Input.CollectionDate), "Дата збору не може бути в майбутньому");
-                await OnGetAsync();
-                return Page();
-            }
+            // Convert local datetime to UTC for PostgreSQL.
+            var utcCollectionDate = normalizedLocalDate.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(normalizedLocalDate, DateTimeKind.Local).ToUniversalTime()
+                : normalizedLocalDate.Kind == DateTimeKind.Local
+                    ? normalizedLocalDate.ToUniversalTime()
+                    : normalizedLocalDate;
 
             var dto = new CreateEvidenceDto
             {
@@ -109,7 +112,14 @@ public class CreateEvidenceInputModel
     public int CaseId { get; set; }
     public CaseFlow.DAL.Enums.EvidenceType Type { get; set; }
     public string Description { get; set; } = null!;
-    public DateTime CollectionDate { get; set; } = DateTime.Now;
+    public DateTime CollectionDate { get; set; } = new DateTime(
+        DateTime.Now.Year,
+        DateTime.Now.Month,
+        DateTime.Now.Day,
+        DateTime.Now.Hour,
+        DateTime.Now.Minute,
+        0
+    );
     public string Region { get; set; } = "Не вказано";
     public string? Annotation { get; set; }
     public string? Purpose { get; set; }

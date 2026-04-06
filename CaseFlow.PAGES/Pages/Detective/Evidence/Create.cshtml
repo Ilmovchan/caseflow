@@ -49,7 +49,7 @@
             </div>
             <div class="mb-3">
                 <label asp-for="Input.CollectionDate" class="form-label">Дата збору</label>
-                <input asp-for="Input.CollectionDate" class="form-control" type="datetime-local" required max="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                <input asp-for="Input.CollectionDate" asp-format="{0:yyyy-MM-ddTHH:mm}" class="form-control" type="datetime-local" step="60" required max="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
                 <span asp-validation-for="Input.CollectionDate" class="text-danger"></span>
             </div>
             <div class="mb-3">

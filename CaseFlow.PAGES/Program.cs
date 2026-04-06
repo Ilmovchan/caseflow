@@ -118,6 +118,44 @@ BEGIN
     END IF;
 END $$;
 ");
+
+    // Reseed other identity PK sequences that are frequently inserted from UI forms.
+    await dbContext.Database.ExecuteSqlRawAsync(@"
+DO $$
+BEGIN
+    IF pg_get_serial_sequence('evidence', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('evidence', 'id'),
+            COALESCE((SELECT MAX(id) FROM evidence), 0),
+            true
+        );
+    END IF;
+
+    IF pg_get_serial_sequence('suspect', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('suspect', 'id'),
+            COALESCE((SELECT MAX(id) FROM suspect), 0),
+            true
+        );
+    END IF;
+
+    IF pg_get_serial_sequence('report', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('report', 'id'),
+            COALESCE((SELECT MAX(id) FROM report), 0),
+            true
+        );
+    END IF;
+
+    IF pg_get_serial_sequence('expense', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('expense', 'id'),
+            COALESCE((SELECT MAX(id) FROM expense), 0),
+            true
+        );
+    END IF;
+END $$;
+");
 }
 
 // Создаём default users только после создания БД
