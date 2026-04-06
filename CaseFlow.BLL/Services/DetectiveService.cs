@@ -331,7 +331,27 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<List<SuspectDto>> GetSuspectsFromCase(int caseId) =>
         await context.CaseSuspects
             .Where(cs => cs.CaseId == caseId)
-            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
+            .Select(cs => new SuspectDto
+            {
+                Id = cs.Suspect.Id,
+                CaseId = cs.CaseId,
+                FirstName = cs.Suspect.FirstName,
+                LastName = cs.Suspect.LastName,
+                FatherName = cs.Suspect.FatherName,
+                Nickname = cs.Suspect.Nickname,
+                PhoneNumber = cs.Suspect.PhoneNumber,
+                DateOfBirth = cs.Suspect.DateOfBirth,
+                Region = cs.Suspect.Region,
+                City = cs.Suspect.City,
+                Street = cs.Suspect.Street,
+                BuildingNumber = cs.Suspect.BuildingNumber,
+                ApartmentNumber = cs.Suspect.ApartmentNumber,
+                Height = cs.Suspect.Height,
+                Weight = cs.Suspect.Weight,
+                PhysicalDescription = cs.Suspect.PhysicalDescription,
+                PriorConvictions = cs.Suspect.PriorConvictions,
+                ApprovalStatus = cs.ApprovalStatus
+            })
             .ToListAsync();
 
     public async Task<List<SuspectDto>> GetApprovedSuspectsAsync() =>

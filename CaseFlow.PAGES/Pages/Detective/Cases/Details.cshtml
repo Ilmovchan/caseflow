@@ -27,5 +27,163 @@
     <dd class="col-sm-10">@(Model.Case.CloseDate?.ToString() ?? "-")</dd>
 </dl>
 
+<div class="mt-4">
+    <h4 class="mb-3">Пов’язані докази</h4>
+    @if (Model.Evidences.Count == 0)
+    {
+        <div class="text-muted">Немає пов’язаних доказів.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th>Тип</th>
+                <th>Опис</th>
+                <th class="text-center">Дата</th>
+                <th>Регіон</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var e in Model.Evidences.OrderBy(x => x.EvidenceId))
+            {
+                var st = e.ApprovalStatus.ToString();
+                var color = st == "Approved" ? "success" : st == "Pending" ? "warning" : st == "Declined" ? "danger" : "secondary";
+                var text = st == "Approved" ? "Схвалено" : st == "Pending" ? "Очікує" : st == "Declined" ? "Відхилено" : "Чернетка";
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Evidence/Details", new { id = e.EvidenceId })">
+                    <td class="text-center">@e.EvidenceId</td>
+                    <td>@e.Type</td>
+                    <td>@e.Description</td>
+                    <td class="text-center">@e.CollectionDate.ToString("yyyy-MM-dd")</td>
+                    <td>@e.Region</td>
+                    <td class="text-center">
+                        <span class="badge bg-@color">@text</span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="mt-4">
+    <h4 class="mb-3">Пов’язані підозрювані</h4>
+    @if (Model.Suspects.Count == 0)
+    {
+        <div class="text-muted">Немає пов’язаних підозрюваних.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th>ПІБ</th>
+                <th>Псевдонім</th>
+                <th>Телефон</th>
+                <th>Місто</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model.Suspects.OrderBy(x => x.Id))
+            {
+                var st = s.ApprovalStatus.ToString();
+                var color = st == "Approved" ? "success" : st == "Pending" ? "warning" : st == "Declined" ? "danger" : "secondary";
+                var text = st == "Approved" ? "Схвалено" : st == "Pending" ? "Очікує" : st == "Declined" ? "Відхилено" : "Чернетка";
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Suspects/Details", new { id = s.Id })">
+                    <td class="text-center">@s.Id</td>
+                    <td>@(s.FullName ?? "-")</td>
+                    <td>@(s.Nickname ?? "-")</td>
+                    <td>@(s.PhoneNumber ?? "-")</td>
+                    <td>@(s.City ?? "-")</td>
+                    <td class="text-center">
+                        <span class="badge bg-@color">@text</span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="mt-4">
+    <h4 class="mb-3">Пов’язані звіти</h4>
+    @if (Model.Reports.Count == 0)
+    {
+        <div class="text-muted">Немає пов’язаних звітів.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th class="text-center">Дата</th>
+                <th>Резюме</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var r in Model.Reports.OrderByDescending(x => x.ReportDate))
+            {
+                var st = (r.ApprovalStatus?.ToString() ?? "Draft");
+                var color = st == "Approved" ? "success" : st == "Pending" ? "warning" : st == "Declined" ? "danger" : "secondary";
+                var text = st == "Approved" ? "Схвалено" : st == "Pending" ? "Очікує" : st == "Declined" ? "Відхилено" : "Чернетка";
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Reports/Details", new { id = r.Id })">
+                    <td class="text-center">@r.Id</td>
+                    <td class="text-center">@r.ReportDate.ToString("yyyy-MM-dd")</td>
+                    <td>@r.Summary</td>
+                    <td class="text-center">
+                        <span class="badge bg-@color">@text</span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="mt-4">
+    <h4 class="mb-3">Пов’язані видатки</h4>
+    @if (Model.Expenses.Count == 0)
+    {
+        <div class="text-muted">Немає пов’язаних видатків.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th class="text-center">Дата</th>
+                <th>Мета</th>
+                <th class="text-end">Сума</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var ex in Model.Expenses.OrderByDescending(x => x.DateTime))
+            {
+                var st = (ex.ApprovalStatus?.ToString() ?? "Draft");
+                var color = st == "Approved" ? "success" : st == "Pending" ? "warning" : st == "Declined" ? "danger" : "secondary";
+                var text = st == "Approved" ? "Схвалено" : st == "Pending" ? "Очікує" : st == "Declined" ? "Відхилено" : "Чернетка";
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Expenses/Details", new { id = ex.Id })">
+                    <td class="text-center">@ex.Id</td>
+                    <td class="text-center">@ex.DateTime.ToString("yyyy-MM-dd")</td>
+                    <td>@ex.Purpose</td>
+                    <td class="text-end">@ex.Amount.ToString("C")</td>
+                    <td class="text-center">
+                        <span class="badge bg-@color">@text</span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
 <a asp-page="Index" class="btn btn-secondary">Назад</a>
 
