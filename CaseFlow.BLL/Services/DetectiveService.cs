@@ -30,6 +30,14 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             .Include(c => c.Detective)
             .ToListAsync();
 
+    public async Task<List<Case>> GetCasesByDetectiveEmailAsync(string detectiveEmail) =>
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .Where(c => c.Detective != null && c.Detective.Email.ToLower() == detectiveEmail.ToLower())
+            .ToListAsync();
+
     public async Task<Case> UpdateCaseAsync(int caseId, UpdateCaseByDetectiveDto dto)
     {
         var caseEntity = await context.Cases.FindAsync(caseId)
@@ -82,13 +90,20 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         var evidence = await context.Evidences.FindAsync(evidenceId)
             ?? throw new EntityNotFoundException("Evidence", evidenceId);
         
-        var caseEvidence = await context.CaseEvidences
-            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId)
+        var caseEvidences = await context.CaseEvidences
+            .Where(ce => ce.EvidenceId == evidenceId)
+            .ToListAsync();
+        var caseEvidence = caseEvidences
+            .OrderBy(ce => ce.CaseId)
+            .FirstOrDefault()
             ?? throw new EntityNotFoundException("CaseEvidence", evidenceId);
 
         mapper.Map(dto, evidence);
-        // Set status to Draft after edit
-        caseEvidence.ApprovalStatus = ApprovalStatus.Draft;
+        // Keep workflow consistent even if entity is linked to multiple cases.
+        foreach (var ce in caseEvidences)
+        {
+            ce.ApprovalStatus = ApprovalStatus.Draft;
+        }
         await context.SaveChangesAsync();
 
         var result = mapper.Map<EvidenceCaseDto>(evidence);
@@ -103,6 +118,10 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         var evidence = await context.Evidences.FindAsync(evidenceId)
             ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
+        var links = await context.CaseEvidences
+            .Where(ce => ce.EvidenceId == evidenceId)
+            .ToListAsync();
+        context.CaseEvidences.RemoveRange(links);
         context.Evidences.Remove(evidence);
         await context.SaveChangesAsync();
     }
@@ -125,7 +144,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             .FirstOrDefaultAsync();
 
     public async Task<List<EvidenceCaseDto>> GetEvidencesAsync() =>
-        await context.CaseEvidences
+        (await context.CaseEvidences
             .Select(ce => new EvidenceCaseDto
             {
                 EvidenceId = ce.EvidenceId,
@@ -138,7 +157,10 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
                 Purpose = ce.Evidence.Purpose,
                 ApprovalStatus = ce.ApprovalStatus
             })
-            .ToListAsync();
+            .ToListAsync())
+            .GroupBy(e => e.EvidenceId)
+            .Select(g => g.OrderBy(x => x.CaseId).First())
+            .ToList();
 
     public async Task<List<EvidenceCaseDto>> GetEvidencesFromCase(int caseId) =>
         await context.CaseEvidences
@@ -232,11 +254,18 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<EvidenceCaseDto> SubmitEvidenceAsync(int evidenceId)
     {
-        var caseEvidence = await context.CaseEvidences
-            .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId)
+        var caseEvidences = await context.CaseEvidences
+            .Where(ce => ce.EvidenceId == evidenceId)
+            .ToListAsync();
+        var caseEvidence = caseEvidences
+            .OrderBy(ce => ce.CaseId)
+            .FirstOrDefault()
             ?? throw new EntityNotFoundException("CaseEvidence", evidenceId);
 
-        caseEvidence.ApprovalStatus = ApprovalStatus.Pending;
+        foreach (var ce in caseEvidences)
+        {
+            ce.ApprovalStatus = ApprovalStatus.Pending;
+        }
         await context.SaveChangesAsync();
         
         var evidence = await context.Evidences.FindAsync(evidenceId);
@@ -275,13 +304,19 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         var suspect = await context.Suspects.FindAsync(suspectId)
             ?? throw new EntityNotFoundException("Suspect", suspectId);
         
-        var caseSuspect = await context.CaseSuspects
-            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId)
+        var caseSuspects = await context.CaseSuspects
+            .Where(cs => cs.SuspectId == suspectId)
+            .ToListAsync();
+        var caseSuspect = caseSuspects
+            .OrderBy(cs => cs.CaseId)
+            .FirstOrDefault()
             ?? throw new EntityNotFoundException("CaseSuspect", suspectId);
 
         mapper.Map(dto, suspect);
-        // Set status to Draft after edit
-        caseSuspect.ApprovalStatus = ApprovalStatus.Draft;
+        foreach (var cs in caseSuspects)
+        {
+            cs.ApprovalStatus = ApprovalStatus.Draft;
+        }
         await context.SaveChangesAsync();
 
         var result = mapper.Map<SuspectDto>(suspect);
@@ -294,6 +329,10 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         var suspect = await context.Suspects.FindAsync(suspectId)
             ?? throw new EntityNotFoundException("Suspect", suspectId);
 
+        var links = await context.CaseSuspects
+            .Where(cs => cs.SuspectId == suspectId)
+            .ToListAsync();
+        context.CaseSuspects.RemoveRange(links);
         context.Suspects.Remove(suspect);
         await context.SaveChangesAsync();
     }
@@ -401,11 +440,18 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<SuspectDto> SubmitSuspectAsync(int suspectId)
     {
-        var caseSuspect = await context.CaseSuspects
-            .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId)
+        var caseSuspects = await context.CaseSuspects
+            .Where(cs => cs.SuspectId == suspectId)
+            .ToListAsync();
+        var caseSuspect = caseSuspects
+            .OrderBy(cs => cs.CaseId)
+            .FirstOrDefault()
             ?? throw new EntityNotFoundException("CaseSuspect", suspectId);
 
-        caseSuspect.ApprovalStatus = ApprovalStatus.Pending;
+        foreach (var cs in caseSuspects)
+        {
+            cs.ApprovalStatus = ApprovalStatus.Pending;
+        }
         await context.SaveChangesAsync();
         
         var suspect = await context.Suspects.FindAsync(suspectId);

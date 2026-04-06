@@ -54,6 +54,9 @@
                     <button class="btn btn-sm btn-approve" data-id="@s.Id" data-type="suspect" title="Надіслати на перевірку">
                         <i class="fas fa-check" style="color: #0dcaf0;"></i>
                     </button>
+                    <button class="btn btn-sm btn-reject" data-id="@s.Id" data-type="suspect" title="Видалити чернетку">
+                        <i class="fas fa-trash" style="color: #dc3545;"></i>
+                    </button>
                 }
                 else if (s.ApprovalStatus.ToString() == "Declined")
                 {

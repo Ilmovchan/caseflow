@@ -6,6 +6,7 @@ using CaseFlow.DAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace CaseFlow.PAGES.Pages.Detective.Cases;
 
@@ -27,7 +28,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         CurrentPage = pageNumber;
 
-        var allCases = await _detectiveService.GetCasesAsync();
+        var detectiveEmail = User.FindFirstValue(ClaimTypes.Email);
+        var allCases = string.IsNullOrWhiteSpace(detectiveEmail)
+            ? new List<Case>()
+            : await _detectiveService.GetCasesByDetectiveEmailAsync(detectiveEmail);
 
         // Map to DTO
         var caseDtos = _mapper.Map<List<CaseDto>>(allCases);

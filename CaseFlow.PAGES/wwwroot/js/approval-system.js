@@ -78,14 +78,15 @@ async function handleApproval(button, type, action) {
       statusBadge && statusBadge.getAttribute("data-status") === "Draft";
 
     if (isDetectivePage) {
+      const handler = action === "approve" ? "Approve" : "Reject";
       if (type === "report") {
-        endpoint = buildHandlerUrl("Approve", id);
+        endpoint = buildHandlerUrl(handler, id);
       } else if (type === "expense") {
-        endpoint = buildHandlerUrl("Approve", id);
+        endpoint = buildHandlerUrl(handler, id);
       } else if (type === "evidence") {
-        endpoint = buildHandlerUrl("Approve", id);
+        endpoint = buildHandlerUrl(handler, id);
       } else if (type === "suspect") {
-        endpoint = buildHandlerUrl("Approve", id);
+        endpoint = buildHandlerUrl(handler, id);
       } else {
         throw new Error(`Unknown entity type: ${type}`);
       }
