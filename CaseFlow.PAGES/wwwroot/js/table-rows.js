@@ -3,6 +3,13 @@
  * Makes table rows clickable and navigates to details page
  */
 
+/** Clicks on row text may target a Text node, which has no .closest() */
+function tableRowClickElement(e) {
+    const t = e.target;
+    if (!t) return null;
+    return t.nodeType === Node.ELEMENT_NODE ? t : t.parentElement;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize clickable rows for all tables
     const clickableRows = document.querySelectorAll('.clickable-row');
@@ -21,8 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add click handler
         row.addEventListener('click', function(e) {
+            const el = tableRowClickElement(e);
+            if (!el) return;
             // Don't navigate if clicking on buttons or links
-            if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.approval-actions')) {
+            if (el.closest('button') || el.closest('a') || el.closest('.approval-actions')) {
                 return;
             }
             

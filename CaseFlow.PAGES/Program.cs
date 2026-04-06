@@ -104,6 +104,20 @@ BEGIN
     END IF;
 END $$;
 ");
+
+    // Same for `case_type.id` (PK_case_type) — out-of-sync sequence causes duplicate key on insert.
+    await dbContext.Database.ExecuteSqlRawAsync(@"
+DO $$
+BEGIN
+    IF pg_get_serial_sequence('case_type', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('case_type', 'id'),
+            COALESCE((SELECT MAX(id) FROM case_type), 0),
+            true
+        );
+    END IF;
+END $$;
+");
 }
 
 // Создаём default users только после создания БД

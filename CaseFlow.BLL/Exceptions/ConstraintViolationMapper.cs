@@ -74,6 +74,15 @@ public static class ConstraintViolationMapper
             }
         }
 
+        // Numeric overflow (e.g., numeric(10,2) too large)
+        if (ex is PostgresException pgExOverflow && pgExOverflow.SqlState == "22003")
+        {
+            return new ConstraintViolationException(
+                "numeric_overflow",
+                "Числове значення завелике. Перевірте поля з сумою/ціною (макс: 99 999 999.99)."
+            );
+        }
+
         return null;
     }
 }

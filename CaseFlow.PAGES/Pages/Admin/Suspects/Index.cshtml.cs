@@ -42,11 +42,9 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allSuspects = allResult.Items;
         }
 
-        // Filter: Admin can only see Pending and Approved items (not Draft or Declined)
-        // Draft: Only detective who created it can see
-        // Declined: Only detective can see (to edit and resubmit)
+        // Filter: Admin sees submitted workflow items (exclude Draft only)
         var filteredItems = allSuspects
-            .Where(s => s.ApprovalStatus == ApprovalStatus.Pending || s.ApprovalStatus == ApprovalStatus.Approved)
+            .Where(s => s.ApprovalStatus != ApprovalStatus.Draft)
             .ToList();
 
         // Apply pagination to filtered items
@@ -72,7 +70,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         PendingSuspects = _mapper.Map<List<SuspectDto>>(pendingSuspectEntities);
     }
     
-    public async Task<IActionResult> OnPostApproveAsync(int id)
+    public async Task<IActionResult> OnPostApproveAsync([FromQuery] int id)
     {
         try
         {
@@ -82,8 +80,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatus = "Approved", 
                 newStatusText = "Схвалено", 
                 newStatusColor = "success",
-                approvalStatus = "Approved",
-                suspect = approved 
+                approvalStatus = "Approved"
             });
         }
         catch (Exception ex)
@@ -95,7 +92,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         }
     }
     
-    public async Task<IActionResult> OnPostRejectAsync(int id)
+    public async Task<IActionResult> OnPostRejectAsync([FromQuery] int id)
     {
         try
         {
@@ -105,8 +102,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatus = "Declined",
                 newStatusText = "Відхилено",
                 newStatusColor = "danger",
-                approvalStatus = "Declined",
-                suspect = rejected
+                approvalStatus = "Declined"
             });
         }
         catch (Exception ex)
@@ -118,7 +114,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostSubmitAsync(int id)
+    public async Task<IActionResult> OnPostSubmitAsync([FromQuery] int id)
     {
         try
         {
@@ -130,7 +126,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatusColor = "warning",
                 approvalStatus = "Pending",
                 message = "Підозрюваний надіслано на перевірку!",
-                suspect = submitted
+                // keep response lightweight (frontend only needs status fields)
             });
         }
         catch (Exception ex)
@@ -142,7 +138,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    public async Task<IActionResult> OnPostDeleteAsync([FromQuery] int id)
     {
         try
         {

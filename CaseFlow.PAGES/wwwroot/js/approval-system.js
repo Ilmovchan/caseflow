@@ -1,97 +1,115 @@
 // Approval System JavaScript
 // Handles approve/decline functionality for all entity types
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Initialize approval system
+/** Clicks on text inside a <button> often set event.target to a Text node, which has no .closest() */
+function eventTargetElement(event) {
+  const t = event.target;
+  if (!t) return null;
+  return t.nodeType === Node.ELEMENT_NODE ? t : t.parentElement;
+}
+
+function bootApprovalSystem() {
   initializeApprovalSystem();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootApprovalSystem);
+} else {
+  bootApprovalSystem();
+}
 
 function initializeApprovalSystem() {
-  // Handle approve button clicks
+  if (window.__caseflowApprovalSystemBound) return;
+  window.__caseflowApprovalSystemBound = true;
+
   document.addEventListener("click", function (e) {
-    if (e.target.closest(".btn-approve")) {
+    const fromEl = eventTargetElement(e);
+    if (!fromEl) return;
+
+    if (fromEl.closest(".btn-approve")) {
       e.preventDefault();
       e.stopPropagation();
-      const button = e.target.closest(".btn-approve");
-      const id = button.getAttribute("data-id");
+      const button = fromEl.closest(".btn-approve");
       const type = button.getAttribute("data-type");
-      handleApproval(id, type, "approve");
+      handleApproval(button, type, "approve");
+      return;
     }
 
-    // Handle reject button clicks
-    if (e.target.closest(".btn-reject")) {
+    if (fromEl.closest(".btn-reject")) {
       e.preventDefault();
       e.stopPropagation();
-      const button = e.target.closest(".btn-reject");
-      const id = button.getAttribute("data-id");
+      const button = fromEl.closest(".btn-reject");
       const type = button.getAttribute("data-type");
-      handleApproval(id, type, "reject");
+      handleApproval(button, type, "reject");
     }
   });
 }
 
-async function handleApproval(id, type, action) {
-  // Prepare references and original content up-front so catch can restore UI
-  const row = document.querySelector(`[data-id="${id}"]`).closest("tr");
+/** POST URL for the current list page (respects PathBase and avoids hard-coded /Admin/... roots). */
+function buildHandlerUrl(handler, id) {
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  const params = new URLSearchParams();
+  params.set("handler", handler);
+  params.set("id", String(id));
+  return `${path}?${params.toString()}`;
+}
+
+async function handleApproval(button, type, action) {
+  const id = button.getAttribute("data-id");
+  const row = button.closest("tr");
+  if (!row) {
+    console.error("approval-system: could not find table row for button");
+    return;
+  }
   const actionCell = row.querySelector(".approval-actions");
   const originalContent = actionCell ? actionCell.innerHTML : "";
   const isEvidence = type === "evidence";
   try {
-    // Show loading state
     if (actionCell) {
       actionCell.innerHTML =
         '<span class="text-muted"><i class="fas fa-spinner fa-spin"></i> Обробка...</span>';
     }
 
-    // Determine the correct endpoint based on type
     let endpoint;
     const isDetectivePage = window.location.pathname.includes("/Detective/");
 
-    // Check if this is a Draft item (for Admin pages)
     const statusBadge = row.querySelector(".approval-status");
     const isDraft =
       statusBadge && statusBadge.getAttribute("data-status") === "Draft";
 
     if (isDetectivePage) {
-      // Detective panel endpoints
       if (type === "report") {
-        endpoint = `/Detective/Reports?handler=Approve&id=${id}`;
+        endpoint = buildHandlerUrl("Approve", id);
       } else if (type === "expense") {
-        endpoint = `/Detective/Expenses?handler=Approve&id=${id}`;
+        endpoint = buildHandlerUrl("Approve", id);
       } else if (type === "evidence") {
-        endpoint = `/Detective/Evidence?handler=Approve&id=${id}`;
+        endpoint = buildHandlerUrl("Approve", id);
       } else if (type === "suspect") {
-        endpoint = `/Detective/Suspects?handler=Approve&id=${id}`;
+        endpoint = buildHandlerUrl("Approve", id);
       } else {
         throw new Error(`Unknown entity type: ${type}`);
       }
     } else {
-      // Admin panel endpoints
-      // For Evidence: Admin only sees Pending items, so always use Approve/Reject
-      // For other types: Draft items use Submit/Delete, Pending items use Approve/Reject
       let handler;
       if (type === "evidence") {
-        // Evidence: Admin only sees Pending items, always use Approve/Reject
         handler = action === "approve" ? "Approve" : "Reject";
       } else {
-        // Other types: Draft = Submit/Delete, Pending = Approve/Reject
         handler = isDraft
           ? action === "approve"
             ? "Submit"
             : "Delete"
           : action === "approve"
-          ? "Approve"
-          : "Reject";
+            ? "Approve"
+            : "Reject";
       }
 
-      if (type === "expense") {
-        endpoint = `/Admin/Expenses?handler=${handler}&id=${id}`;
-      } else if (type === "report") {
-        endpoint = `/Admin/Reports?handler=${handler}&id=${id}`;
-      } else if (type === "evidence") {
-        endpoint = `/Admin/Evidence?handler=${handler}&id=${id}`;
-      } else if (type === "suspect") {
-        endpoint = `/Admin/Suspects?handler=${handler}&id=${id}`;
+      if (
+        type === "expense" ||
+        type === "report" ||
+        type === "evidence" ||
+        type === "suspect"
+      ) {
+        endpoint = buildHandlerUrl(handler, id);
       } else {
         throw new Error(`Unknown entity type: ${type}`);
       }
@@ -99,10 +117,12 @@ async function handleApproval(id, type, action) {
 
     console.log(`Making request to: ${endpoint}`);
 
-    // Make the API call - no body needed since we're using IgnoreAntiforgeryToken
     const response = await fetch(endpoint, {
       method: "POST",
       credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
     });
 
     console.log(`Response status: ${response.status}`);
@@ -116,21 +136,17 @@ async function handleApproval(id, type, action) {
     const result = await response.json();
     console.log("Response data:", result);
 
-    const isDetectivePage = window.location.pathname.includes("/Detective/");
-
-    // Handle reject action for Evidence, Suspects, Expenses, and Reports in Admin panel (removes row since Declined items are not visible to admin)
-    if (!isDetectivePage && (type === "evidence" || type === "suspect" || type === "expense" || type === "report") && action === "reject" && result.success) {
-      // Remove the row from the table (Declined items are not visible to admin)
-      row.remove();
-      showNotification("Відхилено успішно!", "success");
+    if (result && result.success === false) {
+      throw new Error(result.error || "Операція не вдалася");
     }
-    // Handle delete/reject action for other types (removes row)
-    else if (action === "reject" && result.success && result.message) {
-      // Remove the row from the table
+
+    const isDetectivePage2 = window.location.pathname.includes("/Detective/");
+
+    // Remove row only when server signals a delete-style action with a message (e.g. draft delete)
+    if (action === "reject" && result.success && result.message) {
       row.remove();
       showNotification(result.message, "success");
     } else {
-      // Update the UI for submit/approve action
       updateApprovalStatus(
         row,
         result.newStatus,
@@ -138,15 +154,12 @@ async function handleApproval(id, type, action) {
         result.newStatusColor
       );
 
-      // Show success message
       let message;
 
-      if (isDetectivePage) {
+      if (isDetectivePage2) {
         message = result.message || "Надіслано на перевірку успішно!";
       } else {
-        // Admin panel
         if (isEvidence) {
-          // Evidence: Always show approve/reject message
           message = `${action === "approve" ? "Схвалено" : "Відхилено"} успішно!`;
         } else if (isDraft && action === "approve") {
           message = result.message || "Надіслано на перевірку успішно!";
@@ -159,12 +172,10 @@ async function handleApproval(id, type, action) {
     }
   } catch (error) {
     console.error("Approval error:", error);
-    // Restore original content
     if (actionCell) {
       actionCell.innerHTML = originalContent;
     }
 
-    // Show error message
     showNotification(
       `Помилка при ${action === "approve" ? "схваленні" : "відхиленні"}: ${
         error.message
@@ -175,7 +186,6 @@ async function handleApproval(id, type, action) {
 }
 
 function updateApprovalStatus(row, newStatus, newStatusText, newStatusColor) {
-  // Update the status badge
   const statusCell = row.querySelector(".approval-status");
   if (statusCell) {
     statusCell.className = `badge bg-${newStatusColor} approval-status`;
@@ -183,7 +193,6 @@ function updateApprovalStatus(row, newStatus, newStatusText, newStatusColor) {
     statusCell.setAttribute("data-status", newStatus);
   }
 
-  // Update the action buttons
   const actionCell = row.querySelector(".approval-actions");
   if (actionCell) {
     actionCell.innerHTML = '<span class="text-muted">Оброблено</span>';
@@ -198,7 +207,6 @@ function getAntiForgeryToken() {
 }
 
 function showNotification(message, type = "info") {
-  // Create notification element
   const notification = document.createElement("div");
   notification.className = `alert alert-${
     type === "error" ? "danger" : type
@@ -210,10 +218,8 @@ function showNotification(message, type = "info") {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 
-  // Add to page
   document.body.appendChild(notification);
 
-  // Auto-remove after 5 seconds
   setTimeout(() => {
     if (notification.parentNode) {
       notification.remove();

@@ -1,4 +1,5 @@
 using CaseFlow.BLL.Dto.Case;
+using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,8 @@ public class EditModel(AdminService adminService) : PageModel
 
     [BindProperty]
     public UpdateCaseByAdminDto Input { get; set; } = new();
+
+    public string? ErrorMessage { get; set; }
 
     public IEnumerable<SelectListItem> StatusOptions { get; set; } = Enum
         .GetValues(typeof(CaseStatus))
@@ -81,6 +84,42 @@ public class EditModel(AdminService adminService) : PageModel
         });
 
         return RedirectToPage("Details", new { id = Id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync()
+    {
+        try
+        {
+            await _adminService.DeleteCaseAsync(Id);
+            return RedirectToPage("Index");
+        }
+        catch (EntityDeleteConflictException ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        catch (EntityNotFoundException)
+        {
+            return RedirectToPage("Index");
+        }
+
+        var entity = await _adminService.GetCaseAsync(Id);
+        if (entity == null) return RedirectToPage("Index");
+
+        Case = entity;
+        Id = entity.Id;
+        Input = new UpdateCaseByAdminDto
+        {
+            Title = entity.Title,
+            Description = entity.Description,
+            ClientId = entity.ClientId,
+            DetectiveId = entity.DetectiveId,
+            CaseTypeId = entity.CaseTypeId,
+            DeadlineDate = entity.DeadlineDate,
+            Status = entity.Status
+        };
+
+        await LoadOptionsAsync();
+        return Page();
     }
 
     private async Task LoadOptionsAsync()

@@ -6,7 +6,21 @@
 
 <h2>Редагувати тип справи</h2>
 
-<form method="post">
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach (var modelState in ViewData.ModelState.Values)
+        {
+            @foreach (var error in modelState.Errors)
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form method="post" id="editForm">
     <input type="hidden" asp-for="Id" />
     <div class="mb-3">
         <label asp-for="Input.Name" class="form-label"></label>
@@ -18,9 +32,15 @@
         <input asp-for="Input.Price" class="form-control" />
         <span asp-validation-for="Input.Price" class="text-danger"></span>
     </div>
-    <button type="submit" class="btn btn-primary">Зберегти</button>
-    <a asp-page="Index" class="btn btn-secondary">Скасувати</a>
-    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-link">Деталі</a>
 </form>
+
+<div class="mt-3">
+    <button type="submit" form="editForm" class="btn btn-primary">Зберегти</button>
+    <form method="post" asp-page-handler="Delete" style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете видалити цей тип справи? Ця дія незворотна.');">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Видалити</button>
+    </form>
+    <a asp-page="Index" class="btn btn-secondary">Скасувати</a>
+</div>
 
 <partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />
