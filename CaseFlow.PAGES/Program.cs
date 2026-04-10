@@ -43,7 +43,8 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    // Align with auth cookie so PostgreSQL credentials in session stay available for EF for the signed-in period.
+    options.IdleTimeout = TimeSpan.FromHours(8);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -63,19 +64,35 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseSession();
 
-// Применение миграций и создание БД (без ручного EnsureCreated)
+// Migrations: PostgreSQL "postgres" role (see ConnectionStrings:DetectiveAgencyDbMigration).
+// Runtime EF: same PostgreSQL user as login (e.g. admin_test); password kept in session after sign-in.
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<DetectiveAgencyDbContext>();
-    await dbContext.Database.MigrateAsync();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupMigration");
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-    // If the `detective.id` sequence is out of sync with existing rows, inserts may fail with
-    // "duplicate key value violates unique constraint PK_detective". Reseed to MAX(id)+1.
-    await dbContext.Database.ExecuteSqlRawAsync(@"
+    try
+    {
+        var migrationConn = configuration.GetConnectionString("DetectiveAgencyDbMigration")
+            ?? configuration.GetConnectionString("DetectiveAgencyDb");
+        if (string.IsNullOrWhiteSpace(migrationConn))
+        {
+            logger.LogWarning("No migration connection string; skipping migrations.");
+        }
+        else
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<DetectiveAgencyDbContext>();
+            optionsBuilder.ConfigureDetectiveDbContextOptions(migrationConn);
+            await using var dbContext = new DetectiveAgencyDbContext(optionsBuilder.Options);
+            await dbContext.Database.MigrateAsync();
+
+        // If the `detective.id` sequence is out of sync with existing rows, inserts may fail with
+        // "duplicate key value violates unique constraint PK_detective". Reseed to MAX(id)+1.
+        await dbContext.Database.ExecuteSqlRawAsync(@"
 DO $$
 BEGIN
     IF pg_get_serial_sequence('detective', 'id') IS NOT NULL THEN
@@ -88,8 +105,8 @@ BEGIN
 END $$;
 ");
 
-    // Same issue can happen for `case.id` (PK_case).
-    await dbContext.Database.ExecuteSqlRawAsync(@"
+        // Same issue can happen for `case.id` (PK_case).
+        await dbContext.Database.ExecuteSqlRawAsync(@"
 DO $$
 DECLARE seq text;
 BEGIN
@@ -105,8 +122,8 @@ BEGIN
 END $$;
 ");
 
-    // Same for `case_type.id` (PK_case_type) — out-of-sync sequence causes duplicate key on insert.
-    await dbContext.Database.ExecuteSqlRawAsync(@"
+        // Same for `case_type.id` (PK_case_type) — out-of-sync sequence causes duplicate key on insert.
+        await dbContext.Database.ExecuteSqlRawAsync(@"
 DO $$
 BEGIN
     IF pg_get_serial_sequence('case_type', 'id') IS NOT NULL THEN
@@ -119,8 +136,8 @@ BEGIN
 END $$;
 ");
 
-    // Reseed other identity PK sequences that are frequently inserted from UI forms.
-    await dbContext.Database.ExecuteSqlRawAsync(@"
+        // Reseed other identity PK sequences that are frequently inserted from UI forms.
+        await dbContext.Database.ExecuteSqlRawAsync(@"
 DO $$
 BEGIN
     IF pg_get_serial_sequence('evidence', 'id') IS NOT NULL THEN
@@ -156,6 +173,12 @@ BEGIN
     END IF;
 END $$;
 ");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Skipping database migration/sequence reseed during startup. Check DB connection settings.");
+    }
 }
 
 // Razor Pages

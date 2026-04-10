@@ -1,3 +1,4 @@
+using CaseFlow.PAGES;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,8 @@ public class LogoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        await HttpContext.Session.LoadAsync();
+        HttpContext.Session.Remove(PgSessionKeys.Password);
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToPage("/Auth/Login");
     }

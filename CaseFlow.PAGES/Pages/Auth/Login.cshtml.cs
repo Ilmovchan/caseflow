@@ -1,5 +1,6 @@
 using CaseFlow.BLL.Dto.Auth;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -69,6 +70,9 @@ public class LoginModel : PageModel
 
             if (result.Success && result.User != null)
             {
+                await HttpContext.Session.LoadAsync();
+                HttpContext.Session.SetString(PgSessionKeys.Password, Password);
+
                 // Create claims
                 var claims = new List<Claim>
                 {

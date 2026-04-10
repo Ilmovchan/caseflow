@@ -17,6 +17,8 @@ public class AuthService(IConfiguration configuration)
             };
         }
 
+        // Template: Host/Port/Database (and pool defaults). Username/Password are replaced with
+        // the login form values so PostgreSQL authenticates that user (e.g. role "admin" only here).
         var baseConnectionString = configuration.GetConnectionString("DetectiveAgencyDb");
         if (string.IsNullOrWhiteSpace(baseConnectionString))
         {
