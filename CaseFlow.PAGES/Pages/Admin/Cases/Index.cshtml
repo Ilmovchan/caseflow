@@ -25,13 +25,13 @@
     <tr>
         <th class="text-center">ID</th>
         <th class="text-center">Назва</th>
-        <th class="text-center">Статус</th>
         <th class="text-center">Клієнт</th>
         <th class="text-center">Детектив</th>
         <th class="text-center">Тип справи</th>
         <th class="text-center">Початок</th>
         <th class="text-center">Термін</th>
         <th class="text-center">Закриття</th>
+        <th class="text-center">Статус</th>
     </tr>
     </thead>
     <tbody>
@@ -40,13 +40,32 @@
         <tr class="clickable-row" data-href="@Url.Page("Details", new { id = c.Id })">
             <td>@c.Id</td>
             <td>@c.Title</td>
-            <td>@c.Status</td>
             <td>@c.ClientFullName</td>
             <td>@(c.DetectiveFullName ?? "-")</td>
             <td>@c.CaseTypeName</td>
             <td>@c.StartDate</td>
             <td>@c.DeadlineDate</td>
             <td>@(c.CloseDate?.ToString() ?? "-")</td>
+            <td class="text-center">
+                @{
+                    var isOverdue = c.Status.ToString() == "Opened" && c.DeadlineDate < DateOnly.FromDateTime(DateTime.Now);
+                    var statusClass = isOverdue
+                        ? "danger"
+                        : c.Status.ToString() == "Closed"
+                            ? "success"
+                            : c.Status.ToString() == "Paused"
+                                ? "secondary"
+                                : "warning";
+                    var statusText = isOverdue
+                        ? "Протерміновано"
+                        : c.Status.ToString() == "Closed"
+                            ? "Закрито"
+                            : c.Status.ToString() == "Paused"
+                                ? "Призупинено"
+                                : "Відкрито";
+                }
+                <span class="badge bg-@statusClass">@statusText</span>
+            </td>
         </tr>
     }
     </tbody>

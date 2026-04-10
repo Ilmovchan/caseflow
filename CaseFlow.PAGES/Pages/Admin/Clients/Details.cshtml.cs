@@ -10,12 +10,19 @@ public class DetailsModel(AdminService adminService) : PageModel
     private readonly AdminService _adminService = adminService;
 
     public Client Client { get; set; } = null!;
+    public List<Case> ConnectedCases { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var entity = await _adminService.GetClientAsync(id);
         if (entity == null) return NotFound();
         Client = entity;
+
+        ConnectedCases = (await _adminService.GetCasesAsync())
+            .Where(c => c.ClientId == id)
+            .OrderByDescending(c => c.StartDate)
+            .ToList();
+
         return Page();
     }
 }

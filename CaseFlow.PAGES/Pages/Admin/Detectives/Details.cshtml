@@ -23,6 +23,65 @@
     <dd class="col-sm-10">@Model.Detective.HireDate</dd>
 </dl>
 
+<div class="mt-4">
+    <h4 class="mb-3">Пов’язані справи</h4>
+    @if (Model.ConnectedCases.Count == 0)
+    {
+        <div class="text-muted">У цього детектива немає пов’язаних справ.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th>Назва</th>
+                <th>Клієнт</th>
+                <th>Тип справи</th>
+                <th class="text-center">Початок</th>
+                <th class="text-center">Термін</th>
+                <th class="text-center">Закриття</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.ConnectedCases)
+            {
+                <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = c.Id })">
+                    <td class="text-center">@c.Id</td>
+                    <td>@c.Title</td>
+                    <td>@(c.Client != null ? $"{c.Client.LastName} {c.Client.FirstName}" : "-")</td>
+                    <td>@(c.CaseType?.Name ?? "-")</td>
+                    <td class="text-center">@c.StartDate</td>
+                    <td class="text-center">@c.DeadlineDate</td>
+                    <td class="text-center">@(c.CloseDate?.ToString() ?? "-")</td>
+                    <td class="text-center">
+                        @{
+                            var isOverdue = c.Status.ToString() == "Opened" && c.DeadlineDate < DateOnly.FromDateTime(DateTime.Now);
+                            var statusClass = isOverdue
+                                ? "danger"
+                                : c.Status.ToString() == "Closed"
+                                    ? "success"
+                                    : c.Status.ToString() == "Paused"
+                                        ? "secondary"
+                                        : "warning";
+                            var statusText = isOverdue
+                                ? "Протерміновано"
+                                : c.Status.ToString() == "Closed"
+                                    ? "Закрито"
+                                    : c.Status.ToString() == "Paused"
+                                        ? "Призупинено"
+                                        : "Відкрито";
+                        }
+                        <span class="badge bg-@statusClass">@statusText</span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
 <p>
     <a asp-page="Edit" asp-route-id="@Model.Detective.Id" class="btn btn-primary">Редагувати</a>
     <a asp-page="Index" class="btn btn-secondary">Назад</a>

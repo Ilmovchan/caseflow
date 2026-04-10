@@ -9,8 +9,12 @@
 <dl class="row">
     <dt class="col-sm-2">ID</dt>
     <dd class="col-sm-10">@Model.Report.Id</dd>
-    <dt class="col-sm-2">ID справи</dt>
-    <dd class="col-sm-10">@Model.Report.CaseId</dd>
+    <dt class="col-sm-2">Пов’язана справа</dt>
+    <dd class="col-sm-10">
+        <a asp-page="/Admin/Cases/Details" asp-route-id="@Model.Report.CaseId">
+            @Model.Report.CaseId
+        </a>
+    </dd>
     <dt class="col-sm-2">Дата звіту</dt>
     <dd class="col-sm-10">@Model.Report.ReportDate</dd>
     <dt class="col-sm-2">Статус</dt>
@@ -26,5 +30,6 @@
 </dl>
 
 <p>
+    <a asp-page-handler="ExportPdf" asp-route-id="@Model.Report.Id" class="btn btn-outline-danger text-white">Export PDF</a>
     <a asp-page="Index" class="btn btn-secondary">Назад</a>
 </p>

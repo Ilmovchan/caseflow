@@ -1,41 +1,41 @@
 using CaseFlow.BLL.Dto.Auth;
-using CaseFlow.DAL.Data;
-using CaseFlow.DAL.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 
 namespace CaseFlow.BLL.Services;
 
-public class AuthService(DetectiveAgencyDbContext context)
+public class AuthService(IConfiguration configuration)
 {
     public async Task<AuthResultDto> LoginAsync(LoginDto loginDto)
     {
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Username == loginDto.Username && u.Role == loginDto.Role);
-
-        if (user == null || !user.IsActive)
+        if (string.IsNullOrWhiteSpace(loginDto.Username) || string.IsNullOrWhiteSpace(loginDto.Password))
         {
             return new AuthResultDto
             {
                 Success = false,
-                Message = "Невірне ім'я користувача або роль"
+                Message = "Логін і пароль є обов'язковими"
             };
         }
 
-        var hashedPassword = HashPassword(loginDto.Password);
-        if (user.PasswordHash != hashedPassword)
+        var baseConnectionString = configuration.GetConnectionString("DetectiveAgencyDb");
+        if (string.IsNullOrWhiteSpace(baseConnectionString))
         {
             return new AuthResultDto
             {
                 Success = false,
-                Message = "Невірний пароль"
+                Message = "Помилка конфігурації підключення до БД"
             };
         }
 
-        // Update last login
-        user.LastLoginAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
+        var roleFromPostgres = await ResolvePostgresRoleAsync(baseConnectionString, loginDto.Username.Trim(), loginDto.Password);
+        if (roleFromPostgres == null)
+        {
+            return new AuthResultDto
+            {
+                Success = false,
+                Message = "Невірний логін/пароль або не призначена роль PostgreSQL (admin/detective)"
+            };
+        }
 
         return new AuthResultDto
         {
@@ -43,53 +43,56 @@ public class AuthService(DetectiveAgencyDbContext context)
             Message = "Успішний вхід",
             User = new UserDto
             {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                LastLoginAt = user.LastLoginAt,
-                IsActive = user.IsActive
+                Id = 0,
+                Username = loginDto.Username.Trim(),
+                // For detective flow, we use username as identity/email unless mapped elsewhere.
+                Email = loginDto.Username.Trim(),
+                Role = roleFromPostgres,
+                CreatedAt = DateTime.UtcNow,
+                LastLoginAt = DateTime.UtcNow,
+                IsActive = true
             }
         };
     }
 
     public async Task CreateDefaultUsersAsync()
     {
-        // Check if users already exist
-        if (await context.Users.AnyAsync())
-        {
-            return;
-        }
-
-        var defaultUsers = new List<User>
-        {
-            new User
-            {
-                Username = "admin",
-                Email = "admin@caseflow.com",
-                PasswordHash = HashPassword("admin123"),
-                Role = "Admin",
-                IsActive = true
-            },
-            new User
-            {
-                Username = "detective",
-                Email = "detective@caseflow.com",
-                PasswordHash = HashPassword("detective123"),
-                Role = "Detective",
-                IsActive = true
-            }
-        };
-
-        context.Users.AddRange(defaultUsers);
-        await context.SaveChangesAsync();
+        // Auth now relies on PostgreSQL users/roles, not app-level default users table.
+        await Task.CompletedTask;
     }
 
-    private static string HashPassword(string password)
+    private static async Task<string?> ResolvePostgresRoleAsync(string baseConnectionString, string username, string password)
     {
-        using var sha256 = SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
+        try
+        {
+            var csb = new NpgsqlConnectionStringBuilder(baseConnectionString)
+            {
+                Username = username,
+                Password = password
+            };
+
+            await using var connection = new NpgsqlConnection(csb.ConnectionString);
+            await connection.OpenAsync();
+
+            await using var command = new NpgsqlCommand(@"
+SELECT
+    pg_has_role(current_user, 'admin', 'member') AS is_admin,
+    pg_has_role(current_user, 'detective', 'member') AS is_detective;", connection);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            var isAdmin = reader.GetBoolean(0);
+            var isDetective = reader.GetBoolean(1);
+
+            if (isAdmin) return "Admin";
+            if (isDetective) return "Detective";
+            return null;
+        }
+        catch (PostgresException ex) when (ex.SqlState is "28P01" or "28000")
+        {
+            return null;
+        }
     }
 }

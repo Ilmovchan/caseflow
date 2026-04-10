@@ -27,10 +27,6 @@ public class LoginModel : PageModel
     public string Password { get; set; } = string.Empty;
 
     [BindProperty]
-    [Required(ErrorMessage = "Роль обов'язкова")]
-    public string Role { get; set; } = "Admin";
-
-    [BindProperty]
     public bool RememberMe { get; set; }
 
     public string ErrorMessage { get; set; } = string.Empty;
@@ -66,7 +62,6 @@ public class LoginModel : PageModel
             {
                 Username = Username,
                 Password = Password,
-                Role = Role,
                 RememberMe = RememberMe
             };
 

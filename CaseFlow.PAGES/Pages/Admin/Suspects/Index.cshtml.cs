@@ -42,14 +42,9 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allSuspects = allResult.Items;
         }
 
-        // Filter: Admin sees submitted workflow items (exclude Draft only)
-        var filteredItems = allSuspects
-            .Where(s => s.ApprovalStatus != ApprovalStatus.Draft)
-            .ToList();
-
-        // Apply pagination to filtered items
-        var totalCount = filteredItems.Count;
-        var items = filteredItems
+        // Admin sees all statuses, including Draft.
+        var totalCount = allSuspects.Count;
+        var items = allSuspects
             .OrderBy(s => s.Id)
             .Skip((pageNumber - 1) * PageSize)
             .Take(PageSize)

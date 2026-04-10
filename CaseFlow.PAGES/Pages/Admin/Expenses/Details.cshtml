@@ -9,8 +9,12 @@
 <dl class="row">
     <dt class="col-sm-2">ID</dt>
     <dd class="col-sm-10">@Model.Expense.Id</dd>
-    <dt class="col-sm-2">ID справи</dt>
-    <dd class="col-sm-10">@Model.Expense.CaseId</dd>
+    <dt class="col-sm-2">Пов’язана справа</dt>
+    <dd class="col-sm-10">
+        <a asp-page="/Admin/Cases/Details" asp-route-id="@Model.Expense.CaseId">
+            @Model.Expense.CaseId
+        </a>
+    </dd>
     <dt class="col-sm-2">Мета</dt>
     <dd class="col-sm-10">@Model.Expense.Purpose</dd>
     <dt class="col-sm-2">Сума</dt>

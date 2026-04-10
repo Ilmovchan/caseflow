@@ -1,4 +1,0 @@
-optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=DetectiveAgencyDb;Username=postgres;Password=12345");
-
-
-dotnet ef dbcontext scaffold "Host=localhost;Port=5432;Database=DetectiveAgencyDb;Username=postgres;Password=12345" Npgsql.EntityFrameworkCore.PostgreSQL -o Models

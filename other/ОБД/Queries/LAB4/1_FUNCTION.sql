@@ -11,7 +11,7 @@ BEGIN
     RETURN QUERY
     SELECT 
         d.first_name || ' ' || d.last_name AS detective_name,
-        ROUND(AVG(cd.total_case_cost) AS average_case_cost, 2)
+        ROUND(AVG(cd.total_case_cost), 2) AS average_case_cost
     FROM 
         (
             SELECT 

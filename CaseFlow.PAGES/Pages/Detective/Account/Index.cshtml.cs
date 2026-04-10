@@ -16,8 +16,8 @@ public class IndexModel(DetectiveService detectiveService) : PageModel
 
     public async Task OnGetAsync()
     {
-        UserEmail = User.FindFirstValue(ClaimTypes.Email);
         Username = User.Identity?.Name;
+        UserEmail = User.FindFirstValue(ClaimTypes.Email) ?? Username;
 
         if (!string.IsNullOrWhiteSpace(UserEmail))
         {

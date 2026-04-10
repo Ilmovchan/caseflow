@@ -28,10 +28,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         CurrentPage = pageNumber;
 
-        var detectiveEmail = User.FindFirstValue(ClaimTypes.Email);
-        var allCases = string.IsNullOrWhiteSpace(detectiveEmail)
+        var detectiveIdentity = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+        var allCases = string.IsNullOrWhiteSpace(detectiveIdentity)
             ? new List<Case>()
-            : await _detectiveService.GetCasesByDetectiveEmailAsync(detectiveEmail);
+            : await _detectiveService.GetCasesByDetectiveEmailAsync(detectiveIdentity);
 
         // Map to DTO
         var caseDtos = _mapper.Map<List<CaseDto>>(allCases);

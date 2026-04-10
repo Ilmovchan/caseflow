@@ -580,6 +580,14 @@ END $$;
     public async Task<List<Evidence>> GetEvidencesFromCaseAsync(int caseId) =>
         await context.CaseEvidences.Where(ce => ce.CaseId == caseId).Select(ce => ce.Evidence).ToListAsync();
 
+    public async Task<List<Case>> GetCasesByEvidenceIdAsync(int evidenceId) =>
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .Where(c => context.CaseEvidences.Any(ce => ce.CaseId == c.Id && ce.EvidenceId == evidenceId))
+            .ToListAsync();
+
     public async Task<List<Evidence>> GetPendingEvidencesAsync() =>
         await context.Evidences
             .Where(e => e.ApprovalStatus == ApprovalStatus.Pending)
@@ -714,6 +722,14 @@ END $$;
 
     public async Task<List<Suspect>> GetSuspectsFromCaseAsync(int caseId) =>
         await context.CaseSuspects.Where(cs => cs.CaseId == caseId).Select(cs => cs.Suspect).ToListAsync();
+
+    public async Task<List<Case>> GetCasesBySuspectIdAsync(int suspectId) =>
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .Where(c => context.CaseSuspects.Any(cs => cs.CaseId == c.Id && cs.SuspectId == suspectId))
+            .ToListAsync();
 
     public async Task<List<Suspect>> GetPendingSuspectsAsync() =>
         await context.Suspects

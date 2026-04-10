@@ -158,13 +158,6 @@ END $$;
 ");
 }
 
-// Создаём default users только после создания БД
-using (var scope = app.Services.CreateScope())
-{
-    var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-    await authService.CreateDefaultUsersAsync();
-}
-
 // Razor Pages
 app.MapRazorPages();
 

@@ -11,19 +11,6 @@
 </div>
 
 <form method="post">
-    <div class="role-selection">
-        <div class="role-btn active" data-role="Admin">
-            <i class="fas fa-user-shield me-2"></i>
-            <div>Адміністратор</div>
-        </div>
-        <div class="role-btn" data-role="Detective">
-            <i class="fas fa-user-secret me-2"></i>
-            <div>Детектив</div>
-        </div>
-    </div>
-    
-    <input type="hidden" asp-for="Role" id="selectedRole" value="Admin" />
-    
     <div class="mb-3">
         <label asp-for="Username" class="form-label">
             <i class="fas fa-user me-1"></i>Ім'я користувача
@@ -61,24 +48,3 @@
     </div>
 </form>
 
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const roleButtons = document.querySelectorAll('.role-btn');
-            const hiddenRoleInput = document.getElementById('selectedRole');
-            
-            roleButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    roleButtons.forEach(btn => btn.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('active');
-                    
-                    // Update hidden input value
-                    hiddenRoleInput.value = this.dataset.role;
-                });
-            });
-        });
-    </script>
-}
