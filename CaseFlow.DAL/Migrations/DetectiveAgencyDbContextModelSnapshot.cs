@@ -382,7 +382,15 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("street");
 
+                    b.Property<string>("PostgresLogin")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("postgres_login");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("PostgresLogin")
+                        .IsUnique();
 
                     b.ToTable("detective", t =>
                         {
@@ -666,75 +674,6 @@ namespace CaseFlow.DAL.Migrations
                             t.HasCheckConstraint("street_format", "street ~ '^[А-ЯІЇЄа-яіїє\\s\\-]+$'");
 
                             t.HasCheckConstraint("weight_height_format", "weight IS NOT NULL AND weight > 0 AND height IS NOT NULL AND height > 0 OR weight IS NULL AND height IS NULL");
-                        });
-                });
-
-            modelBuilder.Entity("CaseFlow.DAL.Models.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("Id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("CreatedAt")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("Email");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("IsActive");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("LastLoginAt");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("PasswordHash");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("Role");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("Username");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
-                    b.ToTable("Users", t =>
-                        {
-                            t.HasCheckConstraint("created_at_format", "created_at <= CURRENT_TIMESTAMP");
-
-                            t.HasCheckConstraint("email_format", "email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'");
-
-                            t.HasCheckConstraint("last_login_at_format", "last_login_at IS NULL OR last_login_at <= CURRENT_TIMESTAMP");
-
-                            t.HasCheckConstraint("role_format", "role IN ('Admin', 'Detective')");
-
-                            t.HasCheckConstraint("username_format", "username ~ '^[a-zA-Z0-9_]+$'");
                         });
                 });
 

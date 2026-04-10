@@ -37,8 +37,6 @@ public partial class DetectiveAgencyDbContext : DbContext
 
     public virtual DbSet<Suspect> Suspects { get; set; }
 
-    public virtual DbSet<User> Users { get; set; }
-
     #endregion
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -178,6 +176,8 @@ public partial class DetectiveAgencyDbContext : DbContext
                 t.HasCheckConstraint("detective_salary_format", 
                     @"salary >= 0");
             });
+
+            entity.HasIndex(e => e.PostgresLogin).IsUnique();
         });
         
         modelBuilder.Entity<Evidence>(entity =>
@@ -329,33 +329,6 @@ public partial class DetectiveAgencyDbContext : DbContext
             entity.Property(e => e.ApprovalStatus)
                 .HasColumnType("approval_status")
                 .HasDefaultValue(ApprovalStatus.Draft);
-        });
-
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.HasIndex(e => e.Username).IsUnique();
-            entity.HasIndex(e => e.Email).IsUnique();
-
-            entity.ToTable(t =>
-            {
-                t.HasCheckConstraint("username_format", 
-                    @"username ~ '^[a-zA-Z0-9_]+$'");
-                
-                t.HasCheckConstraint("email_format", 
-                    @"email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'");
-                
-                t.HasCheckConstraint("role_format", 
-                    @"role IN ('Admin', 'Detective')");
-                
-                t.HasCheckConstraint("created_at_format", 
-                    @"created_at <= CURRENT_TIMESTAMP");
-                
-                t.HasCheckConstraint("last_login_at_format", 
-                    @"last_login_at IS NULL OR last_login_at <= CURRENT_TIMESTAMP");
-            });
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -66,5 +66,10 @@ public class Detective
     [Column("status")] 
     public DetectiveStatus Status { get; set; } = DetectiveStatus.Active;
 
+    /// <summary>PostgreSQL login role name when an app login was created for this detective.</summary>
+    [Column("postgres_login")]
+    [MaxLength(100)]
+    public string? PostgresLogin { get; set; }
+
     public ICollection<Case> Cases { get; set; } = new List<Case>();
 }

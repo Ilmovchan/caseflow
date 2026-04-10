@@ -166,7 +166,5 @@ public class CaseFlowMappingProfile : Profile
             .ForMember(dest => dest.Annotation, opt => opt.Condition(src => src.Annotation != null))
             .ForMember(dest => dest.Purpose, opt => opt.Condition(src => src.Purpose != null));
         
-        // Authentication mappings
-        CreateMap<User, UserDto>();
     }
 }

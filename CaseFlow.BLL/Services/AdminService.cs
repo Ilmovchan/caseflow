@@ -14,8 +14,6 @@ using CaseFlow.DAL.Enums;
 using CaseFlow.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CaseFlow.BLL.Services;
@@ -385,14 +383,12 @@ END $$;
 
     public async Task<List<Detective>> GetDetectivesWithoutAccountsAsync() =>
         await context.Detectives
-            .Where(d => !context.Users.Any(u =>
-                u.Role == "Detective" &&
-                u.Email.ToLower() == d.Email.ToLower()))
+            .Where(d => d.PostgresLogin == null)
             .OrderBy(d => d.LastName)
             .ThenBy(d => d.FirstName)
             .ToListAsync();
 
-    public async Task<User> CreateDetectiveAccountAsync(int detectiveId, string username, string password)
+    public async Task<DetectiveAccountCreatedDto> CreateDetectiveAccountAsync(int detectiveId, string username, string password)
     {
         if (string.IsNullOrWhiteSpace(username))
             throw new ArgumentException("Username is required");
@@ -408,27 +404,85 @@ END $$;
         var detective = await context.Detectives.FindAsync(detectiveId)
             ?? throw new EntityNotFoundException("Detective", detectiveId);
 
-        var usernameExists = await context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower());
+        if (detective.PostgresLogin != null)
+            throw new InvalidOperationException("This detective already has a login");
+
+        var usernameExists = await context.Detectives.AnyAsync(d =>
+            d.PostgresLogin != null && d.PostgresLogin.ToLower() == username.ToLower());
         if (usernameExists)
             throw new InvalidOperationException("This username is already taken");
 
-        var emailExists = await context.Users.AnyAsync(u => u.Email.ToLower() == detective.Email.ToLower());
+        var emailExists = await context.Detectives.AnyAsync(d =>
+            d.PostgresLogin != null &&
+            d.Email.ToLower() == detective.Email.ToLower());
         if (emailExists)
             throw new InvalidOperationException("An account for this detective already exists");
 
-        var user = new User
+        await context.Database.OpenConnectionAsync();
+        try
+        {
+            var conn = (NpgsqlConnection)context.Database.GetDbConnection();
+            try
+            {
+                await CreateDetectivePostgresRoleAsync(conn, username, password);
+            }
+            catch (PostgresException ex) when (ex.SqlState == "42710")
+            {
+                throw new InvalidOperationException("This username is already taken", ex);
+            }
+        }
+        finally
+        {
+            await context.Database.CloseConnectionAsync();
+        }
+
+        try
+        {
+            detective.PostgresLogin = username;
+            await context.SaveChangesAsync();
+        }
+        catch
+        {
+            await context.Database.OpenConnectionAsync();
+            try
+            {
+                var conn = (NpgsqlConnection)context.Database.GetDbConnection();
+                await DropDetectivePostgresRoleIfExistsAsync(conn, username);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
+
+            throw;
+        }
+
+        return new DetectiveAccountCreatedDto
         {
             Username = username,
-            Email = detective.Email,
-            PasswordHash = HashPassword(password),
-            Role = "Detective",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            Email = detective.Email
         };
+    }
 
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
-        return user;
+    private static string QuotePgIdent(string name) =>
+        "\"" + name.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
+    private static async Task CreateDetectivePostgresRoleAsync(NpgsqlConnection conn, string username, string password)
+    {
+        await using var create = new NpgsqlCommand(
+            $"CREATE ROLE {QuotePgIdent(username)} WITH LOGIN PASSWORD @pwd INHERIT", conn);
+        create.Parameters.AddWithValue("pwd", password);
+        await create.ExecuteNonQueryAsync();
+        await using var grant = new NpgsqlCommand(
+            $"GRANT detective TO {QuotePgIdent(username)}", conn);
+        await grant.ExecuteNonQueryAsync();
+    }
+
+    private static async Task DropDetectivePostgresRoleIfExistsAsync(NpgsqlConnection conn, string roleName)
+    {
+        await using var cmd = new NpgsqlCommand(
+            $"DROP ROLE IF EXISTS {QuotePgIdent(roleName)}", conn);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     private Task ReseedDetectiveIdSequenceAsync()
@@ -462,6 +516,20 @@ END $$;
     {
         var detectiveEntity = await context.Detectives.FindAsync(detectiveId)
                               ?? throw new EntityNotFoundException("Detective", detectiveId);
+
+        if (!string.IsNullOrEmpty(detectiveEntity.PostgresLogin))
+        {
+            await context.Database.OpenConnectionAsync();
+            try
+            {
+                var conn = (NpgsqlConnection)context.Database.GetDbConnection();
+                await DropDetectivePostgresRoleIfExistsAsync(conn, detectiveEntity.PostgresLogin);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
+        }
 
         var cases = await context.Cases.Where(c => c.DetectiveId == detectiveId).ToListAsync();
         foreach (var c in cases)
@@ -497,13 +565,6 @@ END $$;
     }
 
     #endregion
-
-    private static string HashPassword(string password)
-    {
-        using var sha256 = SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
-    }
 
     #region Evidence
 
