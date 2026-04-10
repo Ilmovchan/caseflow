@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CaseFlow.PAGES;
+using CaseFlow.DAL.Configuration;
 using CaseFlow.DAL.Data;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Http;
@@ -50,8 +51,10 @@ public static class DatabaseExtensions
     /// </summary>
     private static string ResolveRuntimeConnectionString(IServiceProvider sp, IConfiguration configuration)
     {
-        var baseConn = configuration.GetConnectionString("DetectiveAgencyDb")
-            ?? throw new InvalidOperationException("ConnectionStrings:DetectiveAgencyDb is required.");
+        var baseConn = NpgsqlConnectionStringHelper.ApplyEnvironmentOverrides(
+            configuration.GetConnectionString("DetectiveAgencyDb"));
+        if (string.IsNullOrWhiteSpace(baseConn))
+            throw new InvalidOperationException("ConnectionStrings:DetectiveAgencyDb is required.");
 
         var httpAccessor = sp.GetRequiredService<IHttpContextAccessor>();
         var httpContext = httpAccessor.HttpContext;

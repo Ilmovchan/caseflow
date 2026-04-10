@@ -1,6 +1,7 @@
 using CaseFlow.PAGES.Extensions;
 using CaseFlow.BLL.MappingProfiles;
 using CaseFlow.BLL.Services;
+using CaseFlow.DAL.Configuration;
 using CaseFlow.DAL.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -77,8 +78,9 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var migrationConn = configuration.GetConnectionString("DetectiveAgencyDbMigration")
-            ?? configuration.GetConnectionString("DetectiveAgencyDb");
+        var migrationConn = NpgsqlConnectionStringHelper.ApplyEnvironmentOverrides(
+            configuration.GetConnectionString("DetectiveAgencyDbMigration")
+            ?? configuration.GetConnectionString("DetectiveAgencyDb"));
         if (string.IsNullOrWhiteSpace(migrationConn))
         {
             logger.LogWarning("No migration connection string; skipping migrations.");
@@ -88,7 +90,25 @@ using (var scope = app.Services.CreateScope())
             var optionsBuilder = new DbContextOptionsBuilder<DetectiveAgencyDbContext>();
             optionsBuilder.ConfigureDetectiveDbContextOptions(migrationConn);
             await using var dbContext = new DetectiveAgencyDbContext(optionsBuilder.Options);
-            await dbContext.Database.MigrateAsync();
+            try
+            {
+                await dbContext.Database.MigrateAsync();
+            }
+            catch (Exception ex)
+            {
+                // Still run idempotent patch + sequence fixes (e.g. history out of sync with actual DB).
+                logger.LogWarning(ex, "EF MigrateAsync failed; continuing with idempotent schema patch and sequence reseed.");
+            }
+
+            // Ensures detective.postgres_login + index exist even when migrations were skipped earlier.
+            try
+            {
+                await ApplyDetectivePostgresLoginSchemaPatchAsync(dbContext);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Idempotent postgres_login schema patch failed (check DB permissions).");
+            }
 
         // If the `detective.id` sequence is out of sync with existing rows, inserts may fail with
         // "duplicate key value violates unique constraint PK_detective". Reseed to MAX(id)+1.
@@ -171,14 +191,57 @@ BEGIN
             true
         );
     END IF;
+
+    IF pg_get_serial_sequence('client', 'id') IS NOT NULL THEN
+        PERFORM setval(
+            pg_get_serial_sequence('client', 'id'),
+            COALESCE((SELECT MAX(id) FROM client), 0),
+            true
+        );
+    END IF;
 END $$;
 ");
         }
     }
     catch (Exception ex)
     {
-        logger.LogWarning(ex, "Skipping database migration/sequence reseed during startup. Check DB connection settings.");
+        logger.LogError(ex, "Database migration/sequence reseed failed. Fix the connection or apply migrations manually; admin pages will error if schema is out of date.");
     }
+}
+
+static async Task ApplyDetectivePostgresLoginSchemaPatchAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        ALTER TABLE detective ADD COLUMN IF NOT EXISTS postgres_login character varying(100);
+        """);
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_catalog.pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'Users'
+            ) THEN
+                UPDATE detective d
+                SET postgres_login = u."Username"
+                FROM "Users" u
+                WHERE u."Email" = d.email AND u."Role" = 'Detective';
+            END IF;
+        END $$;
+        """);
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DROP TABLE IF EXISTS "Users";
+        """);
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_detective_postgres_login" ON detective (postgres_login);
+        """);
 }
 
 // Razor Pages

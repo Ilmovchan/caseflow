@@ -1,4 +1,5 @@
 using CaseFlow.BLL.Dto.Auth;
+using CaseFlow.DAL.Configuration;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
@@ -19,7 +20,8 @@ public class AuthService(IConfiguration configuration)
 
         // Template: Host/Port/Database (and pool defaults). Username/Password are replaced with
         // the login form values so PostgreSQL authenticates that user (e.g. role "admin" only here).
-        var baseConnectionString = configuration.GetConnectionString("DetectiveAgencyDb");
+        var baseConnectionString = NpgsqlConnectionStringHelper.ApplyEnvironmentOverrides(
+            configuration.GetConnectionString("DetectiveAgencyDb"));
         if (string.IsNullOrWhiteSpace(baseConnectionString))
         {
             return new AuthResultDto
