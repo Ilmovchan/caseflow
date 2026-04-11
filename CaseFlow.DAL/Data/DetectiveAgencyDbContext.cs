@@ -41,11 +41,13 @@ public partial class DetectiveAgencyDbContext : DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Use unqualified names only: schema "public" + explicit "public", "name" registers the same type twice
+        // and EnsureCreated emits duplicate CREATE TYPE (42710).
         modelBuilder
-            .HasPostgresEnum<DetectiveStatus>("public", "detective_status")
-            .HasPostgresEnum<CaseStatus>("public", "case_status")
-            .HasPostgresEnum<EvidenceType>("public", "evidence_type")
-            .HasPostgresEnum<ApprovalStatus>("public", "approval_status");
+            .HasPostgresEnum<DetectiveStatus>("detective_status")
+            .HasPostgresEnum<CaseStatus>("case_status")
+            .HasPostgresEnum<EvidenceType>("evidence_type")
+            .HasPostgresEnum<ApprovalStatus>("approval_status");
 
         modelBuilder.Entity<Client>(entity =>
         {
