@@ -55,6 +55,25 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+// Create/update schema from EF migrations when the database is empty or behind (e.g. tables dropped).
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DetectiveAgencyDbContext>();
+    await db.Database.MigrateAsync();
+
+    try
+    {
+        await ApplyDetectiveRoleGrantsAsync(db);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("DatabaseInit");
+        logger.LogWarning(ex,
+            "Could not apply detective role grants (DB user may need CREATEROLE/superuser). Detective logins may fail until grants are applied manually.");
+    }
+}
+
 // Middleware
 if (!app.Environment.IsDevelopment())
 {
@@ -69,191 +88,8 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Migrations: PostgreSQL "postgres" role (see ConnectionStrings:DetectiveAgencyDbMigration).
-// Runtime EF: same PostgreSQL user as login (e.g. admin_test); password kept in session after sign-in.
-using (var scope = app.Services.CreateScope())
-{
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupMigration");
-    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-    try
-    {
-        var migrationConn = NpgsqlConnectionStringHelper.ApplyEnvironmentOverrides(
-            configuration.GetConnectionString("DetectiveAgencyDbMigration")
-            ?? configuration.GetConnectionString("DetectiveAgencyDb"));
-        if (string.IsNullOrWhiteSpace(migrationConn))
-        {
-            logger.LogWarning("No migration connection string; skipping migrations.");
-        }
-        else
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<DetectiveAgencyDbContext>();
-            optionsBuilder.ConfigureDetectiveDbContextOptions(migrationConn);
-            await using var dbContext = new DetectiveAgencyDbContext(optionsBuilder.Options);
-            try
-            {
-                await dbContext.Database.MigrateAsync();
-            }
-            catch (Exception ex)
-            {
-                // Still run idempotent patch + sequence fixes (e.g. history out of sync with actual DB).
-                logger.LogWarning(ex, "EF MigrateAsync failed; continuing with idempotent schema patch and sequence reseed.");
-            }
 
-            // Ensures detective.postgres_login + index exist even when migrations were skipped earlier.
-            try
-            {
-                await ApplyDetectivePostgresLoginSchemaPatchAsync(dbContext);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Idempotent postgres_login schema patch failed (check DB permissions).");
-            }
-
-            // Detective logins use their own PostgreSQL user (inherits group role `detective`). Table owner is
-            // typically the migration user, so detectives get 42501 until we grant DML + enum USAGE + sequences.
-            try
-            {
-                await ApplyDetectiveRoleGrantsAsync(dbContext);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Idempotent GRANT for role detective failed (run app startup as a DB superuser once).");
-            }
-
-        // If the `detective.id` sequence is out of sync with existing rows, inserts may fail with
-        // "duplicate key value violates unique constraint PK_detective". Reseed to MAX(id)+1.
-        await dbContext.Database.ExecuteSqlRawAsync(@"
-DO $$
-BEGIN
-    IF pg_get_serial_sequence('detective', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('detective', 'id'),
-            COALESCE((SELECT MAX(id) FROM detective), 0),
-            true
-        );
-    END IF;
-END $$;
-");
-
-        // Same issue can happen for `case.id` (PK_case).
-        await dbContext.Database.ExecuteSqlRawAsync(@"
-DO $$
-DECLARE seq text;
-BEGIN
-    -- If the sequence is out of sync, new inserts can collide with existing PK values.
-    seq := pg_get_serial_sequence('case', 'id');
-    IF seq IS NOT NULL THEN
-        PERFORM setval(
-            seq::regclass,
-            COALESCE((SELECT MAX(id) FROM ""case""), 0),
-            true
-        );
-    END IF;
-END $$;
-");
-
-        // Same for `case_type.id` (PK_case_type) — out-of-sync sequence causes duplicate key on insert.
-        await dbContext.Database.ExecuteSqlRawAsync(@"
-DO $$
-BEGIN
-    IF pg_get_serial_sequence('case_type', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('case_type', 'id'),
-            COALESCE((SELECT MAX(id) FROM case_type), 0),
-            true
-        );
-    END IF;
-END $$;
-");
-
-        // Reseed other identity PK sequences that are frequently inserted from UI forms.
-        await dbContext.Database.ExecuteSqlRawAsync(@"
-DO $$
-BEGIN
-    IF pg_get_serial_sequence('evidence', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('evidence', 'id'),
-            COALESCE((SELECT MAX(id) FROM evidence), 0),
-            true
-        );
-    END IF;
-
-    IF pg_get_serial_sequence('suspect', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('suspect', 'id'),
-            COALESCE((SELECT MAX(id) FROM suspect), 0),
-            true
-        );
-    END IF;
-
-    IF pg_get_serial_sequence('report', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('report', 'id'),
-            COALESCE((SELECT MAX(id) FROM report), 0),
-            true
-        );
-    END IF;
-
-    IF pg_get_serial_sequence('expense', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('expense', 'id'),
-            COALESCE((SELECT MAX(id) FROM expense), 0),
-            true
-        );
-    END IF;
-
-    IF pg_get_serial_sequence('client', 'id') IS NOT NULL THEN
-        PERFORM setval(
-            pg_get_serial_sequence('client', 'id'),
-            COALESCE((SELECT MAX(id) FROM client), 0),
-            true
-        );
-    END IF;
-END $$;
-");
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Database migration/sequence reseed failed. Fix the connection or apply migrations manually; admin pages will error if schema is out of date.");
-    }
-}
-
-static async Task ApplyDetectivePostgresLoginSchemaPatchAsync(DetectiveAgencyDbContext dbContext)
-{
-    await dbContext.Database.ExecuteSqlRawAsync(
-        """
-        ALTER TABLE detective ADD COLUMN IF NOT EXISTS postgres_login character varying(100);
-        """);
-
-    await dbContext.Database.ExecuteSqlRawAsync(
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM pg_catalog.pg_class c
-                JOIN pg_namespace n ON n.oid = c.relnamespace
-                WHERE n.nspname = 'public' AND c.relname = 'Users'
-            ) THEN
-                UPDATE detective d
-                SET postgres_login = u."Username"
-                FROM "Users" u
-                WHERE u."Email" = d.email AND u."Role" = 'Detective';
-            END IF;
-        END $$;
-        """);
-
-    await dbContext.Database.ExecuteSqlRawAsync(
-        """
-        DROP TABLE IF EXISTS "Users";
-        """);
-
-    await dbContext.Database.ExecuteSqlRawAsync(
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS "IX_detective_postgres_login" ON detective (postgres_login);
-        """);
-}
 
 /// <summary>
 /// Grants the <c>detective</c> group role access to agency tables so EF works when detectives connect with their
