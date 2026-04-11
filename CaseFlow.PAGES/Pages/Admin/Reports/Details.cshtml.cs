@@ -60,7 +60,7 @@ public class DetailsModel(AdminService adminService) : PageModel
             });
         }).GeneratePdf();
 
-        return File(pdfBytes, "application/pdf", $"report-{report.Id}.pdf");
+        return File(pdfBytes, "application/pdf", $"Report_{report.Id}_{report.ReportDate}.pdf");
     }
 
     private static string ToUkrainianStatus(CaseFlow.DAL.Enums.ApprovalStatus status) => status switch

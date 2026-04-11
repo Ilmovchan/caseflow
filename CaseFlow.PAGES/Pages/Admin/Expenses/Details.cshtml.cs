@@ -61,7 +61,8 @@ public class DetailsModel(AdminService adminService) : PageModel
             });
         }).GeneratePdf();
 
-        return File(pdfBytes, "application/pdf", $"expense-{expense.Id}.pdf");
+        return File(pdfBytes, "application/pdf", $"Expense_{expense.Id}_{expense.DateTime}.pdf");
+
     }
 
     private static string ToUkrainianStatus(ApprovalStatus status) => status switch
