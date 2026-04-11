@@ -24,6 +24,10 @@ namespace CaseFlow.DAL.Migrations
                 .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "approval_status", new[] { "Відхилено", "Надіслано", "Схвалено", "Чернетка" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "case_status", new[] { "Відкрито", "Закрито", "Призупинено" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "detective_status", new[] { "Активний(а)", "Звільнений(а)", "У відпустці", "У відставці" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "evidence_type", new[] { "Інше", "Аудіодоказ", "Біологічний доказ", "Біометричний доказ", "Відеодоказ", "Документальний доказ", "Електронний доказ", "Матеріальний доказ", "Фотодоказ", "Фізичний доказ", "Цифровий доказ" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "public", "approval_status", new[] { "Чернетка", "Надіслано", "Схвалено", "Відхилено" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "public", "case_status", new[] { "Відкрито", "Закрито", "Призупинено" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "public", "detective_status", new[] { "Активний(а)", "У відпустці", "У відставці", "Звільнений(а)" });

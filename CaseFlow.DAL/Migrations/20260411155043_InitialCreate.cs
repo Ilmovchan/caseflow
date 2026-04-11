@@ -14,6 +14,10 @@ namespace CaseFlow.DAL.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:Enum:approval_status", "Відхилено,Надіслано,Схвалено,Чернетка")
+                .Annotation("Npgsql:Enum:case_status", "Відкрито,Закрито,Призупинено")
+                .Annotation("Npgsql:Enum:detective_status", "Активний(а),Звільнений(а),У відпустці,У відставці")
+                .Annotation("Npgsql:Enum:evidence_type", "Інше,Аудіодоказ,Біологічний доказ,Біометричний доказ,Відеодоказ,Документальний доказ,Електронний доказ,Матеріальний доказ,Фотодоказ,Фізичний доказ,Цифровий доказ")
                 .Annotation("Npgsql:Enum:public.approval_status", "Чернетка,Надіслано,Схвалено,Відхилено")
                 .Annotation("Npgsql:Enum:public.case_status", "Відкрито,Закрито,Призупинено")
                 .Annotation("Npgsql:Enum:public.detective_status", "Активний(а),У відпустці,У відставці,Звільнений(а)")
