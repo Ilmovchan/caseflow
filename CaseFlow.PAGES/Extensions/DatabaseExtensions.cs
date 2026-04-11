@@ -28,7 +28,15 @@ public static class DatabaseExtensions
 
         var dataSource = dataSourceBuilder.Build();
 
-        options.UseNpgsql(dataSource);
+        // Npgsql 9: enums must be registered for EF translation (parameters as PG enums, not ints), not only on the data source.
+        // See https://www.npgsql.org/efcore/release-notes/9.0.html ("Enum mappings must now be configured at the EF level").
+        options.UseNpgsql(dataSource, npgsql =>
+        {
+            npgsql.MapEnum<CaseStatus>("case_status");
+            npgsql.MapEnum<DetectiveStatus>("detective_status");
+            npgsql.MapEnum<EvidenceType>("evidence_type");
+            npgsql.MapEnum<ApprovalStatus>("approval_status");
+        });
     }
 
     public static IServiceCollection ConfigureDatabase(
