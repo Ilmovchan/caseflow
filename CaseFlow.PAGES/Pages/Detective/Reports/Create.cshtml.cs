@@ -2,6 +2,7 @@ using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.Report;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -20,7 +21,10 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
     public async Task OnGetAsync()
     {
-        var cases = await _detectiveService.GetCasesAsync();
+        var identity = DetectiveIdentity.FromUser(User);
+        var cases = string.IsNullOrEmpty(identity)
+            ? []
+            : await _detectiveService.GetCasesByDetectiveEmailAsync(identity);
         Cases = cases.Select(c => new CaseDto
         {
             Id = c.Id,
@@ -37,13 +41,17 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
         try
         {
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+
             var dto = new CreateReportDto
             {
                 Summary = Input.Summary,
                 Comments = Input.Comments
             };
 
-            var created = await _detectiveService.CreateReportAsync(Input.CaseId, dto);
+            var created = await _detectiveService.CreateReportAsync(Input.CaseId, dto, identity);
             return RedirectToPage("Details", new { id = created.Id });
         }
         catch (EntityNotFoundException ex)

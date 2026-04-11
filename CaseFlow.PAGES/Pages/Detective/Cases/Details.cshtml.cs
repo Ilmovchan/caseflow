@@ -5,6 +5,7 @@ using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Dto.Report;
 using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -25,16 +26,20 @@ public class DetailsModel(DetectiveService detectiveService, IMapper mapper) : P
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _detectiveService.GetCaseAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+
+        var entity = await _detectiveService.GetCaseForDetectiveAsync(id, identity);
         if (entity == null) return NotFound();
         
         Case = _mapper.Map<CaseDto>(entity);
 
         // Connected entities
-        Evidences = await _detectiveService.GetEvidencesFromCase(id);
-        Suspects = await _detectiveService.GetSuspectsFromCase(id);
-        Reports = await _detectiveService.GetReportsFromCaseAsync(id);
-        Expenses = await _detectiveService.GetExpensesFromCaseAsync(id);
+        Evidences = await _detectiveService.GetEvidencesFromCase(id, identity);
+        Suspects = await _detectiveService.GetSuspectsFromCase(id, identity);
+        Reports = await _detectiveService.GetReportsFromCaseAsync(id, identity);
+        Expenses = await _detectiveService.GetExpensesFromCaseAsync(id, identity);
 
         return Page();
     }

@@ -1,9 +1,11 @@
 using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.Evidence;
-using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Dto.Report;
+using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Controllers;
@@ -13,20 +15,31 @@ namespace CaseFlow.PAGES.Controllers;
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveCaseController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetCaseAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetCaseForDetectiveAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetCasesAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetCasesByDetectiveEmailAsync(identity));
+    }
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -35,8 +48,18 @@ public class DetectiveCaseController(DetectiveService service) : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] UpdateCaseByDetectiveDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var updated = await service.UpdateCaseAsync(id, dto);
-        return Ok(updated);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        try
+        {
+            var updated = await service.UpdateCaseAsync(id, dto, identity);
+            return Ok(updated);
+        }
+        catch (CaseFlow.BLL.Exceptions.EntityNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }
 
@@ -45,6 +68,7 @@ public class DetectiveCaseController(DetectiveService service) : ControllerBase
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveClientController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
@@ -52,13 +76,22 @@ public class DetectiveClientController(DetectiveService service) : ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetClientAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetClientForDetectiveAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetClientsAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetClientsForDetectiveAsync(identity));
+    }
 }
 
 // ---------------- EVIDENCE ----------------
@@ -66,6 +99,7 @@ public class DetectiveClientController(DetectiveService service) : ControllerBas
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveEvidenceController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
@@ -83,19 +117,40 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
 
     [HttpGet("case/{caseId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFromCase(int caseId) => Ok(await service.GetEvidencesFromCase(caseId));
+    public async Task<IActionResult> GetFromCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetEvidencesFromCase(caseId, identity));
+    }
 
     [HttpGet("approved")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetApproved() => Ok(await service.GetApprovedEvidencesAsync());
+    public async Task<IActionResult> GetApproved()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetApprovedEvidencesAsync(identity));
+    }
 
     [HttpGet("declined")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeclined() => Ok(await service.GetDeclinedEvidencesAsync());
+    public async Task<IActionResult> GetDeclined()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetDeclinedEvidencesAsync(identity));
+    }
 
     [HttpGet("pending")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPending() => Ok(await service.GetPendingEvidencesAsync());
+    public async Task<IActionResult> GetPending()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetPendingEvidencesAsync(identity));
+    }
 
     [HttpPost("case/{caseId:int}")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -103,43 +158,51 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
     public async Task<IActionResult> Create(int caseId, [FromBody] CreateEvidenceDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var created = await service.CreateEvidenceAsync(caseId, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var created = await service.CreateEvidenceAsync(caseId, dto, identity);
         return CreatedAtAction(nameof(Get), new { id = created.EvidenceId }, created);
     }
 
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateEvidenceDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var updated = await service.UpdateEvidenceAsync(id, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.UpdateEvidenceAsync(id, dto, identity);
         return Ok(updated);
     }
 
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        await service.DeleteEvidenceAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.DeleteEvidenceAsync(id, identity);
         return NoContent();
     }
 
     [HttpPost("{evidenceId:int}/link/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Link(int evidenceId, int caseId)
     {
-        await service.LinkEvidenceToCaseAsync(evidenceId, caseId);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.LinkEvidenceToCaseAsync(evidenceId, caseId, identity);
         return NoContent();
     }
 
     [HttpPost("{evidenceId:int}/unlink/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Unlink(int evidenceId, int caseId)
     {
-        await service.UnlinkEvidenceFromCaseAsync(evidenceId, caseId);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.UnlinkEvidenceFromCaseAsync(evidenceId, caseId, identity);
         return NoContent();
     }
 }
@@ -149,11 +212,10 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveSuspectController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(int id)
     {
         var item = await service.GetSuspectAsync(id);
@@ -161,68 +223,93 @@ public class DetectiveSuspectController(DetectiveService service) : ControllerBa
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll() => Ok(await service.GetSuspectsAsync());
 
     [HttpGet("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFromCase(int caseId) => Ok(await service.GetSuspectsFromCase(caseId));
+    public async Task<IActionResult> GetFromCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetSuspectsFromCase(caseId, identity));
+    }
 
     [HttpGet("approved")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetApproved() => Ok(await service.GetApprovedSuspectsAsync());
+    public async Task<IActionResult> GetApproved()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetApprovedSuspectsAsync(identity));
+    }
 
     [HttpGet("declined")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeclined() => Ok(await service.GetDeclinedSuspectsAsync());
+    public async Task<IActionResult> GetDeclined()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetDeclinedSuspectsAsync(identity));
+    }
 
     [HttpGet("pending")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPending() => Ok(await service.GetPendingSuspectsAsync());
+    public async Task<IActionResult> GetPending()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetPendingSuspectsAsync(identity));
+    }
 
     [HttpPost("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int caseId, [FromBody] CreateSuspectDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var created = await service.CreateSuspectAsync(caseId, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var created = await service.CreateSuspectAsync(caseId, dto, identity);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSuspectDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var updated = await service.UpdateSuspectAsync(id, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.UpdateSuspectAsync(id, dto, identity);
         return Ok(updated);
     }
 
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        await service.DeleteSuspectAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.DeleteSuspectAsync(id, identity);
         return NoContent();
     }
 
     [HttpPost("{suspectId:int}/link/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Link(int suspectId, int caseId)
     {
-        await service.LinkSuspectToCaseAsync(suspectId, caseId);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.LinkSuspectToCaseAsync(suspectId, caseId, identity);
         return NoContent();
     }
 
     [HttpPost("{suspectId:int}/unlink/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Unlink(int suspectId, int caseId)
     {
-        await service.UnlinkSuspectFromCaseAsync(suspectId, caseId);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.UnlinkSuspectFromCaseAsync(suspectId, caseId, identity);
         return NoContent();
     }
 }
@@ -232,64 +319,93 @@ public class DetectiveSuspectController(DetectiveService service) : ControllerBa
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveExpenseController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetExpenseAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetExpenseAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetExpensesAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetExpensesAsync(identity));
+    }
 
     [HttpGet("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFromCase(int caseId) => Ok(await service.GetExpensesFromCaseAsync(caseId));
+    public async Task<IActionResult> GetFromCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetExpensesFromCaseAsync(caseId, identity));
+    }
 
     [HttpGet("approved")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetApproved() => Ok(await service.GetApprovedExpensesAsync());
+    public async Task<IActionResult> GetApproved()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetApprovedExpensesAsync(identity));
+    }
 
     [HttpGet("declined")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeclined() => Ok(await service.GetDeclinedExpensesAsync());
+    public async Task<IActionResult> GetDeclined()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetDeclinedExpensesAsync(identity));
+    }
 
     [HttpGet("pending")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPending() => Ok(await service.GetPendingExpensesAsync());
+    public async Task<IActionResult> GetPending()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetPendingExpensesAsync(identity));
+    }
 
     [HttpPost("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int caseId, [FromBody] CreateExpenseDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var created = await service.CreateExpenseAsync(caseId, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var created = await service.CreateExpenseAsync(caseId, dto, identity);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateExpenseDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var updated = await service.UpdateExpenseAsync(id, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.UpdateExpenseAsync(id, dto, identity);
         return Ok(updated);
     }
 
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        await service.DeleteExpenseAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.DeleteExpenseAsync(id, identity);
         return NoContent();
     }
 }
@@ -299,64 +415,93 @@ public class DetectiveExpenseController(DetectiveService service) : ControllerBa
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
 [Consumes("application/json")]
+[Authorize(Policy = "DetectiveOnly")]
 public class DetectiveReportController(DetectiveService service) : ControllerBase
 {
     [HttpGet("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetReportAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetReportAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetReportsAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetReportsAsync(identity));
+    }
 
     [HttpGet("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFromCase(int caseId) => Ok(await service.GetReportsFromCaseAsync(caseId));
+    public async Task<IActionResult> GetFromCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetReportsFromCaseAsync(caseId, identity));
+    }
 
     [HttpGet("approved")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetApproved() => Ok(await service.GetApprovedReportsAsync());
+    public async Task<IActionResult> GetApproved()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetApprovedReportsAsync(identity));
+    }
 
     [HttpGet("declined")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeclined() => Ok(await service.GetDeclinedReportsAsync());
+    public async Task<IActionResult> GetDeclined()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetDeclinedReportsAsync(identity));
+    }
 
     [HttpGet("pending")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPending() => Ok(await service.GetPendingReportsAsync());
+    public async Task<IActionResult> GetPending()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetPendingReportsAsync(identity));
+    }
 
     [HttpPost("case/{caseId:int}")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int caseId, [FromBody] CreateReportDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var created = await service.CreateReportAsync(caseId, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var created = await service.CreateReportAsync(caseId, dto, identity);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateReportDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var updated = await service.UpdateReportAsync(id, dto);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.UpdateReportAsync(id, dto, identity);
         return Ok(updated);
     }
 
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        await service.DeleteReportAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        await service.DeleteReportAsync(id, identity);
         return NoContent();
     }
 }

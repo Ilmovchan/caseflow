@@ -2,6 +2,7 @@ using AutoMapper;
 using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -66,7 +67,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         try
         {
-            var submitted = await _detectiveService.SubmitSuspectAsync(id);
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+            var submitted = await _detectiveService.SubmitSuspectAsync(id, identity);
             return new JsonResult(new {
                 success = true,
                 newStatus = "Pending",
@@ -90,7 +94,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         try
         {
-            await _detectiveService.DeleteSuspectAsync(id);
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+            await _detectiveService.DeleteSuspectAsync(id, identity);
             return new JsonResult(new {
                 success = true,
                 message = "Підозрюваний видалено успішно"

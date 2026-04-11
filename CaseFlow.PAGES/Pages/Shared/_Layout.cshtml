@@ -159,6 +159,16 @@
                                 </li>
                             }
 
+                            @if (currentPage.StartsWith("/Detective/Clients"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/Clients/Index">
+                                        <i class="fas fa-users me-1"></i>Клієнти
+                                    </a>
+                                </li>
+                            }
+
                             <!-- Звіти — показывается только в разделе Reports -->
                             @if (currentPage.StartsWith("/Detective/Reports"))
                             {

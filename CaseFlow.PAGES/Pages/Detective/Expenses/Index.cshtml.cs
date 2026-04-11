@@ -2,6 +2,7 @@ using AutoMapper;
 using CaseFlow.BLL.Dto.Common;
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -28,7 +29,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         CurrentPage = pageNumber;
 
-        var allExpenses = await _detectiveService.GetExpensesAsync();
+        var identity = DetectiveIdentity.FromUser(User);
+        var allExpenses = string.IsNullOrEmpty(identity)
+            ? []
+            : await _detectiveService.GetExpensesAsync(identity);
         
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -65,7 +69,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         try
         {
-            var submitted = await _detectiveService.SubmitExpenseAsync(id);
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+            var submitted = await _detectiveService.SubmitExpenseAsync(id, identity);
             return new JsonResult(new {
                 success = true,
                 newStatus = "Pending",
@@ -89,7 +96,10 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         try
         {
-            await _detectiveService.DeleteExpenseAsync(id);
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+            await _detectiveService.DeleteExpenseAsync(id, identity);
             return new JsonResult(new {
                 success = true,
                 message = "Видатки видалено успішно"

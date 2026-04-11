@@ -1,0 +1,62 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Clients.DetailsModel
+@{
+    ViewData["Title"] = "Деталі клієнта";
+}
+
+<h2>Деталі клієнта</h2>
+
+<dl class="row">
+    <dt class="col-sm-2">ID</dt>
+    <dd class="col-sm-10">@Model.Client.Id</dd>
+    <dt class="col-sm-2">ПІБ</dt>
+    <dd class="col-sm-10">@Model.Client.LastName @Model.Client.FirstName @Model.Client.FatherName</dd>
+    <dt class="col-sm-2">Email</dt>
+    <dd class="col-sm-10">@Model.Client.Email</dd>
+    <dt class="col-sm-2">Телефон</dt>
+    <dd class="col-sm-10">@Model.Client.PhoneNumber</dd>
+    <dt class="col-sm-2">Дата народження</dt>
+    <dd class="col-sm-10">@Model.Client.DateOfBirth</dd>
+    <dt class="col-sm-2">Адреса</dt>
+    <dd class="col-sm-10">@Model.Client.Region, @Model.Client.City, @Model.Client.Street @Model.Client.BuildingNumber@(Model.Client.ApartmentNumber.HasValue ? $", кв. {Model.Client.ApartmentNumber}" : "")</dd>
+    <dt class="col-sm-2">Зареєстровано</dt>
+    <dd class="col-sm-10">@Model.Client.RegistrationDate</dd>
+</dl>
+
+<div class="mt-4">
+    <h4 class="mb-3">Ваші справи з цим клієнтом</h4>
+    @if (Model.ConnectedCases.Count == 0)
+    {
+        <div class="text-muted">Немає справ за цим клієнтом у вашому портфелі.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th>Назва</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.ConnectedCases)
+            {
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Cases/Details", new { id = c.Id })">
+                    <td class="text-center">@c.Id</td>
+                    <td>@c.Title</td>
+                    <td class="text-center">@c.Status</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<p>
+    <a asp-page="Index" class="btn btn-secondary">Назад</a>
+</p>
+
+@section Scripts {
+    <script src="~/js/table-rows.js"></script>
+}

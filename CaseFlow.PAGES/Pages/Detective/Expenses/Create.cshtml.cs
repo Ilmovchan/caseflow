@@ -3,6 +3,7 @@ using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -21,7 +22,10 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
     public async Task OnGetAsync()
     {
-        var cases = await _detectiveService.GetCasesAsync();
+        var identity = DetectiveIdentity.FromUser(User);
+        var cases = string.IsNullOrEmpty(identity)
+            ? []
+            : await _detectiveService.GetCasesByDetectiveEmailAsync(identity);
         Cases = cases.Select(c => new CaseDto
         {
             Id = c.Id,
@@ -41,6 +45,10 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
         try
         {
+            var identity = DetectiveIdentity.FromUser(User);
+            if (string.IsNullOrEmpty(identity))
+                return Unauthorized();
+
             // Convert local datetime to UTC for PostgreSQL
             // datetime-local inputs return DateTime with Kind=Unspecified
             var utcDateTime = Input.DateTime.Kind == DateTimeKind.Unspecified
@@ -57,7 +65,7 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 Annotation = Input.Annotation
             };
 
-            var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto);
+            var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto, identity);
             return RedirectToPage("Details", new { id = created.Id });
         }
         catch (EntityNotFoundException ex)

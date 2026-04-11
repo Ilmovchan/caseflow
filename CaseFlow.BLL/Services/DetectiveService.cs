@@ -15,6 +15,88 @@ namespace CaseFlow.BLL.Services;
 
 public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 {
+    /// <summary>Login uses PostgreSQL role name (<c>detective.postgres_login</c>) stored in claims as Email; also match <c>detective.email</c>.</summary>
+    private static string NormalizeIdentity(string identity) => identity.Trim().ToLowerInvariant();
+
+    private async Task<Detective?> FindDetectiveByIdentityAsync(string identity)
+    {
+        var key = NormalizeIdentity(identity);
+        return await context.Detectives.FirstOrDefaultAsync(d =>
+            (d.PostgresLogin != null && d.PostgresLogin.ToLower() == key)
+            || d.Email.ToLower() == key);
+    }
+
+    private async Task<HashSet<int>> GetAllowedCaseIdsForDetectiveIdentityAsync(string identity)
+    {
+        var det = await FindDetectiveByIdentityAsync(identity);
+        if (det == null) return [];
+        var ids = await context.Cases.Where(c => c.DetectiveId == det.Id).Select(c => c.Id).ToListAsync();
+        return ids.ToHashSet();
+    }
+
+    private async Task EnsureCaseAllowedForDetectiveAsync(string identity, int caseId)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(identity);
+        if (!allowed.Contains(caseId))
+            throw new EntityNotFoundException("Case", caseId);
+    }
+
+    private async Task EnsureExpenseAllowedForDetectiveAsync(string identity, int expenseId)
+    {
+        var expense = await context.Expenses.AsNoTracking().FirstOrDefaultAsync(e => e.Id == expenseId)
+                      ?? throw new EntityNotFoundException("Expense", expenseId);
+        await EnsureCaseAllowedForDetectiveAsync(identity, expense.CaseId);
+    }
+
+    private async Task EnsureReportAllowedForDetectiveAsync(string identity, int reportId)
+    {
+        var report = await context.Reports.AsNoTracking().FirstOrDefaultAsync(r => r.Id == reportId)
+                     ?? throw new EntityNotFoundException("Report", reportId);
+        await EnsureCaseAllowedForDetectiveAsync(identity, report.CaseId);
+    }
+
+    /// <summary>Update/delete/submit when evidence is linked only to this detective's cases.</summary>
+    private async Task EnsureEvidenceOnlyLinkedToAllowedCasesAsync(string identity, int evidenceId)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(identity);
+        var caseIds = await context.CaseEvidences.Where(ce => ce.EvidenceId == evidenceId).Select(ce => ce.CaseId).ToListAsync();
+        if (caseIds.Count == 0)
+            throw new EntityNotFoundException("CaseEvidence", evidenceId);
+        if (caseIds.Any(cid => !allowed.Contains(cid)))
+            throw new EntityNotFoundException("Evidence", evidenceId);
+    }
+
+    /// <summary>Edit evidence if it has no links or at least one link to an allowed case.</summary>
+    private async Task EnsureEvidenceEditableByDetectiveAsync(string identity, int evidenceId)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(identity);
+        var caseIds = await context.CaseEvidences.Where(ce => ce.EvidenceId == evidenceId).Select(ce => ce.CaseId).ToListAsync();
+        if (caseIds.Count == 0)
+            return;
+        if (caseIds.All(cid => !allowed.Contains(cid)))
+            throw new EntityNotFoundException("Evidence", evidenceId);
+    }
+
+    private async Task EnsureSuspectOnlyLinkedToAllowedCasesAsync(string identity, int suspectId)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(identity);
+        var caseIds = await context.CaseSuspects.Where(cs => cs.SuspectId == suspectId).Select(cs => cs.CaseId).ToListAsync();
+        if (caseIds.Count == 0)
+            throw new EntityNotFoundException("CaseSuspect", suspectId);
+        if (caseIds.Any(cid => !allowed.Contains(cid)))
+            throw new EntityNotFoundException("Suspect", suspectId);
+    }
+
+    private async Task EnsureSuspectEditableByDetectiveAsync(string identity, int suspectId)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(identity);
+        var caseIds = await context.CaseSuspects.Where(cs => cs.SuspectId == suspectId).Select(cs => cs.CaseId).ToListAsync();
+        if (caseIds.Count == 0)
+            return;
+        if (caseIds.All(cid => !allowed.Contains(cid)))
+            throw new EntityNotFoundException("Suspect", suspectId);
+    }
+
     #region Case
     public async Task<Case?> GetCaseAsync(int caseId) =>
         await context.Cases
@@ -23,6 +105,15 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             .Include(c => c.Detective)
             .FirstOrDefaultAsync(c => c.Id == caseId);
 
+    /// <summary>Case details for detective UI: only if the case is assigned to this detective.</summary>
+    public async Task<Case?> GetCaseForDetectiveAsync(int caseId, string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        if (!allowed.Contains(caseId))
+            return null;
+        return await GetCaseAsync(caseId);
+    }
+
     public async Task<List<Case>> GetCasesAsync() =>
         await context.Cases
             .Include(c => c.CaseType)
@@ -30,18 +121,25 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             .Include(c => c.Detective)
             .ToListAsync();
 
-    public async Task<List<Case>> GetCasesByDetectiveEmailAsync(string detectiveEmail) =>
-        await context.Cases
+    public async Task<List<Case>> GetCasesByDetectiveEmailAsync(string detectiveIdentity)
+    {
+        var key = NormalizeIdentity(detectiveIdentity);
+        return await context.Cases
             .Include(c => c.CaseType)
             .Include(c => c.Client)
             .Include(c => c.Detective)
-            .Where(c => c.Detective != null && c.Detective.Email.ToLower() == detectiveEmail.ToLower())
+            .Where(c => c.Detective != null
+                        && c.DetectiveId != null
+                        && ((c.Detective.PostgresLogin != null && c.Detective.PostgresLogin.ToLower() == key)
+                            || c.Detective.Email.ToLower() == key))
             .ToListAsync();
+    }
 
-    public async Task<Case> UpdateCaseAsync(int caseId, UpdateCaseByDetectiveDto dto)
+    public async Task<Case> UpdateCaseAsync(int caseId, UpdateCaseByDetectiveDto dto, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var caseEntity = await context.Cases.FindAsync(caseId)
-            ?? throw new EntityNotFoundException("Case", caseId);
+                         ?? throw new EntityNotFoundException("Case", caseId);
 
         mapper.Map(dto, caseEntity);
         await context.SaveChangesAsync();
@@ -55,16 +153,38 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
 
     public async Task<List<Client>> GetClientsAsync() =>
         await context.Clients.ToListAsync();
+
+    /// <summary>Clients that have at least one case assigned to this detective.</summary>
+    public async Task<List<Client>> GetClientsForDetectiveAsync(string detectiveIdentity)
+    {
+        var caseIds = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        if (caseIds.Count == 0)
+            return [];
+        var clientIds = await context.Cases.Where(c => caseIds.Contains(c.Id)).Select(c => c.ClientId).Distinct().ToListAsync();
+        return await context.Clients.Where(cl => clientIds.Contains(cl.Id)).OrderBy(cl => cl.LastName).ThenBy(cl => cl.FirstName).ToListAsync();
+    }
+
+    public async Task<Client?> GetClientForDetectiveAsync(int clientId, string detectiveIdentity)
+    {
+        var caseIds = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        if (caseIds.Count == 0)
+            return null;
+        var ok = await context.Cases.AnyAsync(c => caseIds.Contains(c.Id) && c.ClientId == clientId);
+        if (!ok)
+            return null;
+        return await context.Clients.FindAsync(clientId);
+    }
     #endregion
 
     #region DetectiveAccount
-    public async Task<Detective?> GetDetectiveByEmailAsync(string email) =>
-        await context.Detectives.FirstOrDefaultAsync(d => d.Email.ToLower() == email.ToLower());
+    public async Task<Detective?> GetDetectiveByEmailAsync(string identity) =>
+        await FindDetectiveByIdentityAsync(identity);
     #endregion
 
     #region Evidence
-    public async Task<EvidenceCaseDto> CreateEvidenceAsync(int caseId, CreateEvidenceDto dto)
+    public async Task<EvidenceCaseDto> CreateEvidenceAsync(int caseId, CreateEvidenceDto dto, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var evidenceEntity = mapper.Map<Evidence>(dto);
         context.Evidences.Add(evidenceEntity);
 
@@ -85,8 +205,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return result;
     }
 
-    public async Task<EvidenceCaseDto> UpdateEvidenceAsync(int evidenceId, UpdateEvidenceDto dto)
+    public async Task<EvidenceCaseDto> UpdateEvidenceAsync(int evidenceId, UpdateEvidenceDto dto, string detectiveIdentity)
     {
+        await EnsureEvidenceEditableByDetectiveAsync(detectiveIdentity, evidenceId);
         var evidence = await context.Evidences.FindAsync(evidenceId)
             ?? throw new EntityNotFoundException("Evidence", evidenceId);
         
@@ -113,8 +234,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return result;
     }
 
-    public async Task DeleteEvidenceAsync(int evidenceId)
+    public async Task DeleteEvidenceAsync(int evidenceId, string detectiveIdentity)
     {
+        await EnsureEvidenceOnlyLinkedToAllowedCasesAsync(detectiveIdentity, evidenceId);
         var evidence = await context.Evidences.FindAsync(evidenceId)
             ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
@@ -143,26 +265,40 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             })
             .FirstOrDefaultAsync();
 
-    public async Task<List<EvidenceCaseDto>> GetEvidencesAsync() =>
-        (await context.CaseEvidences
-            .Select(ce => new EvidenceCaseDto
-            {
-                EvidenceId = ce.EvidenceId,
-                CaseId = ce.CaseId,
-                Type = ce.Evidence.Type,
-                Description = ce.Evidence.Description,
-                CollectionDate = ce.Evidence.CollectionDate,
-                Region = ce.Evidence.Region,
-                Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
-            })
-            .ToListAsync())
-            .GroupBy(e => e.EvidenceId)
-            .Select(g => g.OrderBy(x => x.CaseId).First())
-            .ToList();
+    /// <summary>All evidence rows for detective panel (global catalog); <see cref="EvidenceCaseDto.CaseId"/> is a representative link if any.</summary>
+    public async Task<List<EvidenceCaseDto>> GetEvidencesAsync()
+    {
+        var evidences = await context.Evidences.AsNoTracking().OrderBy(e => e.Id).ToListAsync();
+        var allLinks = await context.CaseEvidences.AsNoTracking().ToListAsync();
+        var firstByEvidence = allLinks
+            .GroupBy(ce => ce.EvidenceId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.CaseId).First());
 
-    public async Task<List<EvidenceCaseDto>> GetEvidencesFromCase(int caseId) =>
+        return evidences.Select(e =>
+        {
+            firstByEvidence.TryGetValue(e.Id, out var ce);
+            return new EvidenceCaseDto
+            {
+                EvidenceId = e.Id,
+                CaseId = ce?.CaseId,
+                Type = e.Type,
+                Description = e.Description,
+                CollectionDate = e.CollectionDate,
+                Region = e.Region,
+                Annotation = e.Annotation,
+                Purpose = e.Purpose,
+                ApprovalStatus = ce?.ApprovalStatus ?? ApprovalStatus.Draft
+            };
+        }).ToList();
+    }
+
+    public async Task<List<EvidenceCaseDto>> GetEvidencesFromCase(int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
+        return await GetEvidencesFromCaseInternalAsync(caseId);
+    }
+
+    private async Task<List<EvidenceCaseDto>> GetEvidencesFromCaseInternalAsync(int caseId) =>
         await context.CaseEvidences
             .Where(ce => ce.CaseId == caseId)
             .Select(ce => new EvidenceCaseDto
@@ -179,59 +315,69 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             })
             .ToListAsync();
 
-    public async Task<List<EvidenceCaseDto>> GetApprovedEvidencesAsync() =>
-        await context.CaseEvidences
-            .Where(ce => ce.ApprovalStatus == ApprovalStatus.Approved)
-            .Select(ce => new EvidenceCaseDto
-            {
-                EvidenceId = ce.EvidenceId,
-                CaseId = ce.CaseId,
-                Type = ce.Evidence.Type,
-                Description = ce.Evidence.Description,
-                CollectionDate = ce.Evidence.CollectionDate,
-                Region = ce.Evidence.Region,
-                Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
-            })
-            .ToListAsync();
-
-    public async Task<List<EvidenceCaseDto>> GetDeclinedEvidencesAsync() =>
-        await context.CaseEvidences
-            .Where(ce => ce.ApprovalStatus == ApprovalStatus.Declined)
-            .Select(ce => new EvidenceCaseDto
-            {
-                EvidenceId = ce.EvidenceId,
-                CaseId = ce.CaseId,
-                Type = ce.Evidence.Type,
-                Description = ce.Evidence.Description,
-                CollectionDate = ce.Evidence.CollectionDate,
-                Region = ce.Evidence.Region,
-                Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
-            })
-            .ToListAsync();
-
-    public async Task<List<EvidenceCaseDto>> GetPendingEvidencesAsync() =>
-        await context.CaseEvidences
-            .Where(ce => ce.ApprovalStatus == ApprovalStatus.Pending)
-            .Select(ce => new EvidenceCaseDto
-            {
-                EvidenceId = ce.EvidenceId,
-                CaseId = ce.CaseId,
-                Type = ce.Evidence.Type,
-                Description = ce.Evidence.Description,
-                CollectionDate = ce.Evidence.CollectionDate,
-                Region = ce.Evidence.Region,
-                Annotation = ce.Evidence.Annotation,
-                Purpose = ce.Evidence.Purpose,
-                ApprovalStatus = ce.ApprovalStatus
-            })
-            .ToListAsync();
-
-    public async Task LinkEvidenceToCaseAsync(int evidenceId, int caseId)
+    public async Task<List<EvidenceCaseDto>> GetApprovedEvidencesAsync(string detectiveIdentity)
     {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseEvidences
+            .Where(ce => allowed.Contains(ce.CaseId) && ce.ApprovalStatus == ApprovalStatus.Approved)
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<EvidenceCaseDto>> GetDeclinedEvidencesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseEvidences
+            .Where(ce => allowed.Contains(ce.CaseId) && ce.ApprovalStatus == ApprovalStatus.Declined)
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<EvidenceCaseDto>> GetPendingEvidencesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseEvidences
+            .Where(ce => allowed.Contains(ce.CaseId) && ce.ApprovalStatus == ApprovalStatus.Pending)
+            .Select(ce => new EvidenceCaseDto
+            {
+                EvidenceId = ce.EvidenceId,
+                CaseId = ce.CaseId,
+                Type = ce.Evidence.Type,
+                Description = ce.Evidence.Description,
+                CollectionDate = ce.Evidence.CollectionDate,
+                Region = ce.Evidence.Region,
+                Annotation = ce.Evidence.Annotation,
+                Purpose = ce.Evidence.Purpose,
+                ApprovalStatus = ce.ApprovalStatus
+            })
+            .ToListAsync();
+    }
+
+    public async Task LinkEvidenceToCaseAsync(int evidenceId, int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var entity = new CaseEvidence
         {
             CaseId = caseId,
@@ -242,8 +388,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task UnlinkEvidenceFromCaseAsync(int evidenceId, int caseId)
+    public async Task UnlinkEvidenceFromCaseAsync(int evidenceId, int caseId, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var entity = await context.CaseEvidences
             .FirstOrDefaultAsync(ce => ce.EvidenceId == evidenceId && ce.CaseId == caseId)
             ?? throw new InvalidOperationException("Evidence not linked to case");
@@ -252,8 +399,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task<EvidenceCaseDto> SubmitEvidenceAsync(int evidenceId)
+    public async Task<EvidenceCaseDto> SubmitEvidenceAsync(int evidenceId, string detectiveIdentity)
     {
+        await EnsureEvidenceOnlyLinkedToAllowedCasesAsync(detectiveIdentity, evidenceId);
         var caseEvidences = await context.CaseEvidences
             .Where(ce => ce.EvidenceId == evidenceId)
             .ToListAsync();
@@ -278,8 +426,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     #endregion
 
     #region Suspect
-    public async Task<SuspectDto> CreateSuspectAsync(int caseId, CreateSuspectDto dto)
+    public async Task<SuspectDto> CreateSuspectAsync(int caseId, CreateSuspectDto dto, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var suspect = mapper.Map<Suspect>(dto);
         context.Suspects.Add(suspect);
 
@@ -299,8 +448,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return result;
     }
 
-    public async Task<SuspectDto> UpdateSuspectAsync(int suspectId, UpdateSuspectDto dto)
+    public async Task<SuspectDto> UpdateSuspectAsync(int suspectId, UpdateSuspectDto dto, string detectiveIdentity)
     {
+        await EnsureSuspectEditableByDetectiveAsync(detectiveIdentity, suspectId);
         var suspect = await context.Suspects.FindAsync(suspectId)
             ?? throw new EntityNotFoundException("Suspect", suspectId);
         
@@ -324,8 +474,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return result;
     }
 
-    public async Task DeleteSuspectAsync(int suspectId)
+    public async Task DeleteSuspectAsync(int suspectId, string detectiveIdentity)
     {
+        await EnsureSuspectOnlyLinkedToAllowedCasesAsync(detectiveIdentity, suspectId);
         var suspect = await context.Suspects.FindAsync(suspectId)
             ?? throw new EntityNotFoundException("Suspect", suspectId);
 
@@ -372,7 +523,13 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return results;
     }
 
-    public async Task<List<SuspectDto>> GetSuspectsFromCase(int caseId) =>
+    public async Task<List<SuspectDto>> GetSuspectsFromCase(int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
+        return await GetSuspectsFromCaseInternalAsync(caseId);
+    }
+
+    private async Task<List<SuspectDto>> GetSuspectsFromCaseInternalAsync(int caseId) =>
         await context.CaseSuspects
             .Where(cs => cs.CaseId == caseId)
             .Select(cs => new SuspectDto
@@ -398,26 +555,36 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             })
             .ToListAsync();
 
-    public async Task<List<SuspectDto>> GetApprovedSuspectsAsync() =>
-        await context.CaseSuspects
-            .Where(cs => cs.ApprovalStatus == ApprovalStatus.Approved)
-            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
-            .ToListAsync();
-
-    public async Task<List<SuspectDto>> GetDeclinedSuspectsAsync() =>
-        await context.CaseSuspects
-            .Where(cs => cs.ApprovalStatus == ApprovalStatus.Declined)
-            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
-            .ToListAsync();
-
-    public async Task<List<SuspectDto>> GetPendingSuspectsAsync() =>
-        await context.CaseSuspects
-            .Where(cs => cs.ApprovalStatus == ApprovalStatus.Pending)
-            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
-            .ToListAsync();
-
-    public async Task LinkSuspectToCaseAsync(int suspectId, int caseId)
+    public async Task<List<SuspectDto>> GetApprovedSuspectsAsync(string detectiveIdentity)
     {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseSuspects
+            .Where(cs => allowed.Contains(cs.CaseId) && cs.ApprovalStatus == ApprovalStatus.Approved)
+            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
+            .ToListAsync();
+    }
+
+    public async Task<List<SuspectDto>> GetDeclinedSuspectsAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseSuspects
+            .Where(cs => allowed.Contains(cs.CaseId) && cs.ApprovalStatus == ApprovalStatus.Declined)
+            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
+            .ToListAsync();
+    }
+
+    public async Task<List<SuspectDto>> GetPendingSuspectsAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.CaseSuspects
+            .Where(cs => allowed.Contains(cs.CaseId) && cs.ApprovalStatus == ApprovalStatus.Pending)
+            .Select(cs => mapper.Map<SuspectDto>(cs.Suspect))
+            .ToListAsync();
+    }
+
+    public async Task LinkSuspectToCaseAsync(int suspectId, int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var entity = new CaseSuspect
         {
             CaseId = caseId,
@@ -428,8 +595,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task UnlinkSuspectFromCaseAsync(int suspectId, int caseId)
+    public async Task UnlinkSuspectFromCaseAsync(int suspectId, int caseId, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var entity = await context.CaseSuspects
             .FirstOrDefaultAsync(cs => cs.SuspectId == suspectId && cs.CaseId == caseId)
             ?? throw new InvalidOperationException("Suspect not linked to case");
@@ -438,8 +606,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task<SuspectDto> SubmitSuspectAsync(int suspectId)
+    public async Task<SuspectDto> SubmitSuspectAsync(int suspectId, string detectiveIdentity)
     {
+        await EnsureSuspectOnlyLinkedToAllowedCasesAsync(detectiveIdentity, suspectId);
         var caseSuspects = await context.CaseSuspects
             .Where(cs => cs.SuspectId == suspectId)
             .ToListAsync();
@@ -462,8 +631,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     #endregion
 
     #region Expense
-    public async Task<ExpenseDto> CreateExpenseAsync(int caseId, CreateExpenseDto dto)
+    public async Task<ExpenseDto> CreateExpenseAsync(int caseId, CreateExpenseDto dto, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var expense = mapper.Map<Expense>(dto);
         expense.CaseId = caseId;
         expense.ApprovalStatus = ApprovalStatus.Draft;
@@ -472,8 +642,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return mapper.Map<ExpenseDto>(expense);
     }
 
-    public async Task<ExpenseDto> UpdateExpenseAsync(int expenseId, UpdateExpenseDto dto)
+    public async Task<ExpenseDto> UpdateExpenseAsync(int expenseId, UpdateExpenseDto dto, string detectiveIdentity)
     {
+        await EnsureExpenseAllowedForDetectiveAsync(detectiveIdentity, expenseId);
         var expense = await context.Expenses.FindAsync(expenseId)
             ?? throw new EntityNotFoundException("Expense", expenseId);
 
@@ -484,8 +655,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return mapper.Map<ExpenseDto>(expense);
     }
 
-    public async Task DeleteExpenseAsync(int expenseId)
+    public async Task DeleteExpenseAsync(int expenseId, string detectiveIdentity)
     {
+        await EnsureExpenseAllowedForDetectiveAsync(detectiveIdentity, expenseId);
         var expense = await context.Expenses.FindAsync(expenseId)
             ?? throw new EntityNotFoundException("Expense", expenseId);
 
@@ -493,45 +665,68 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task<ExpenseDto?> GetExpenseAsync(int expenseId) =>
-        await context.Expenses
+    public async Task<ExpenseDto?> GetExpenseAsync(int expenseId, string detectiveIdentity)
+    {
+        var expense = await context.Expenses
             .Where(e => e.Id == expenseId)
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
+        if (expense == null)
+            return null;
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return allowed.Contains(expense.CaseId) ? expense : null;
+    }
 
-    public async Task<List<ExpenseDto>> GetExpensesAsync() =>
-        await context.Expenses
+    public async Task<List<ExpenseDto>> GetExpensesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Expenses
+            .Where(e => allowed.Contains(e.CaseId))
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ExpenseDto>> GetExpensesFromCaseAsync(int caseId) =>
-        await context.Expenses
+    public async Task<List<ExpenseDto>> GetExpensesFromCaseAsync(int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
+        return await context.Expenses
             .Where(e => e.CaseId == caseId)
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ExpenseDto>> GetApprovedExpensesAsync() =>
-        await context.Expenses
-            .Where(e => e.ApprovalStatus == ApprovalStatus.Approved)
+    public async Task<List<ExpenseDto>> GetApprovedExpensesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Expenses
+            .Where(e => allowed.Contains(e.CaseId) && e.ApprovalStatus == ApprovalStatus.Approved)
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ExpenseDto>> GetDeclinedExpensesAsync() =>
-        await context.Expenses
-            .Where(e => e.ApprovalStatus == ApprovalStatus.Declined)
+    public async Task<List<ExpenseDto>> GetDeclinedExpensesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Expenses
+            .Where(e => allowed.Contains(e.CaseId) && e.ApprovalStatus == ApprovalStatus.Declined)
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ExpenseDto>> GetPendingExpensesAsync() =>
-        await context.Expenses
-            .Where(e => e.ApprovalStatus == ApprovalStatus.Pending)
+    public async Task<List<ExpenseDto>> GetPendingExpensesAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Expenses
+            .Where(e => allowed.Contains(e.CaseId) && e.ApprovalStatus == ApprovalStatus.Pending)
             .ProjectTo<ExpenseDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
     #endregion
 
     #region Report
-    public async Task<ReportDto> CreateReportAsync(int caseId, CreateReportDto dto)
+    public async Task<ReportDto> CreateReportAsync(int caseId, CreateReportDto dto, string detectiveIdentity)
     {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
         var report = mapper.Map<Report>(dto);
         report.CaseId = caseId;
         report.ApprovalStatus = ApprovalStatus.Draft;
@@ -540,8 +735,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return mapper.Map<ReportDto>(report);
     }
 
-    public async Task<ReportDto> UpdateReportAsync(int reportId, UpdateReportDto dto)
+    public async Task<ReportDto> UpdateReportAsync(int reportId, UpdateReportDto dto, string detectiveIdentity)
     {
+        await EnsureReportAllowedForDetectiveAsync(detectiveIdentity, reportId);
         var report = await context.Reports.FindAsync(reportId)
             ?? throw new EntityNotFoundException("Report", reportId);
 
@@ -552,8 +748,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return mapper.Map<ReportDto>(report);
     }
 
-    public async Task DeleteReportAsync(int reportId)
+    public async Task DeleteReportAsync(int reportId, string detectiveIdentity)
     {
+        await EnsureReportAllowedForDetectiveAsync(detectiveIdentity, reportId);
         var report = await context.Reports.FindAsync(reportId)
             ?? throw new EntityNotFoundException("Report", reportId);
 
@@ -561,43 +758,66 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         await context.SaveChangesAsync();
     }
 
-    public async Task<ReportDto?> GetReportAsync(int reportId) =>
-        await context.Reports
+    public async Task<ReportDto?> GetReportAsync(int reportId, string detectiveIdentity)
+    {
+        var report = await context.Reports
             .Where(r => r.Id == reportId)
             .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
+        if (report == null)
+            return null;
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return allowed.Contains(report.CaseId) ? report : null;
+    }
 
-    public async Task<List<ReportDto>> GetReportsAsync() =>
-        await context.Reports
+    public async Task<List<ReportDto>> GetReportsAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Reports
+            .Where(r => allowed.Contains(r.CaseId))
             .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ReportDto>> GetReportsFromCaseAsync(int caseId) =>
-        await context.Reports
+    public async Task<List<ReportDto>> GetReportsFromCaseAsync(int caseId, string detectiveIdentity)
+    {
+        await EnsureCaseAllowedForDetectiveAsync(detectiveIdentity, caseId);
+        return await context.Reports
             .Where(r => r.CaseId == caseId)
             .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
 
-    public async Task<List<ReportDto>> GetApprovedReportsAsync() =>
-        await context.Reports
-            .Where(r => r.ApprovalStatus == ApprovalStatus.Approved)
-            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
-
-    public async Task<List<ReportDto>> GetDeclinedReportsAsync() =>
-        await context.Reports
-            .Where(r => r.ApprovalStatus == ApprovalStatus.Declined)
-            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
-
-    public async Task<List<ReportDto>> GetPendingReportsAsync() =>
-        await context.Reports
-            .Where(r => r.ApprovalStatus == ApprovalStatus.Pending)
-            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
-
-    public async Task<ReportDto> SubmitReportAsync(int reportId)
+    public async Task<List<ReportDto>> GetApprovedReportsAsync(string detectiveIdentity)
     {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Reports
+            .Where(r => allowed.Contains(r.CaseId) && r.ApprovalStatus == ApprovalStatus.Approved)
+            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    public async Task<List<ReportDto>> GetDeclinedReportsAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Reports
+            .Where(r => allowed.Contains(r.CaseId) && r.ApprovalStatus == ApprovalStatus.Declined)
+            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    public async Task<List<ReportDto>> GetPendingReportsAsync(string detectiveIdentity)
+    {
+        var allowed = await GetAllowedCaseIdsForDetectiveIdentityAsync(detectiveIdentity);
+        return await context.Reports
+            .Where(r => allowed.Contains(r.CaseId) && r.ApprovalStatus == ApprovalStatus.Pending)
+            .ProjectTo<ReportDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    public async Task<ReportDto> SubmitReportAsync(int reportId, string detectiveIdentity)
+    {
+        await EnsureReportAllowedForDetectiveAsync(detectiveIdentity, reportId);
         var report = await context.Reports.FindAsync(reportId)
             ?? throw new EntityNotFoundException("Report", reportId);
 
@@ -606,8 +826,9 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         return mapper.Map<ReportDto>(report);
     }
 
-    public async Task<ExpenseDto> SubmitExpenseAsync(int expenseId)
+    public async Task<ExpenseDto> SubmitExpenseAsync(int expenseId, string detectiveIdentity)
     {
+        await EnsureExpenseAllowedForDetectiveAsync(detectiveIdentity, expenseId);
         var expense = await context.Expenses.FindAsync(expenseId)
             ?? throw new EntityNotFoundException("Expense", expenseId);
 
