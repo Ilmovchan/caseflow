@@ -44,6 +44,9 @@
                 </span>
             </td>
             <td class="approval-actions">
+                <a asp-page="/Admin/Reports/Details" asp-page-handler="ExportPdf" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger me-1 mb-1" title="Завантажити PDF">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
                 @if (r.ApprovalStatus.ToString() == "Pending")
                 {
                     <button class="btn btn-sm btn-success btn-approve" data-id="@r.Id" data-type="report" title="Схвалити">

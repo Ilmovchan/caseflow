@@ -128,6 +128,7 @@
                 <th class="text-center">Дата</th>
                 <th>Резюме</th>
                 <th class="text-center">Статус</th>
+                <th class="text-center">PDF</th>
             </tr>
             </thead>
             <tbody>
@@ -142,6 +143,9 @@
                     <td>@r.Summary</td>
                     <td class="text-center">
                         <span class="badge bg-@color">@text</span>
+                    </td>
+                    <td class="text-center">
+                        <a asp-page="/Admin/Reports/Details" asp-page-handler="ExportPdf" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="PDF"><i class="fas fa-file-pdf"></i></a>
                     </td>
                 </tr>
             }
@@ -166,6 +170,7 @@
                 <th>Мета</th>
                 <th class="text-end">Сума</th>
                 <th class="text-center">Статус</th>
+                <th class="text-center">PDF</th>
             </tr>
             </thead>
             <tbody>
@@ -181,6 +186,9 @@
                     <td class="text-end">@ex.Amount.ToString("C")</td>
                     <td class="text-center">
                         <span class="badge bg-@color">@text</span>
+                    </td>
+                    <td class="text-center">
+                        <a asp-page="/Admin/Expenses/Details" asp-page-handler="ExportPdf" asp-route-id="@ex.Id" class="btn btn-sm btn-outline-danger" title="PDF"><i class="fas fa-file-pdf"></i></a>
                     </td>
                 </tr>
             }
