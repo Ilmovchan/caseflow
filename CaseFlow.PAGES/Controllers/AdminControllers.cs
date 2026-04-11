@@ -247,8 +247,6 @@ public class AdminEvidenceController(AdminService service, IMapper mapper) : Con
         });
     }
 
-    // Evidence approval methods removed - Evidence entity no longer has ApprovalStatus
-    // Approval status is managed through CaseEvidence junction table
 }
 
 // ---------------- SUSPECT ----------------
@@ -315,8 +313,6 @@ public class AdminSuspectController(AdminService service, IMapper mapper) : Cont
         });
     }
 
-    // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
-    // Approval status is managed through CaseSuspect junction table
 }
 
 // ---------------- EXPENSE ----------------

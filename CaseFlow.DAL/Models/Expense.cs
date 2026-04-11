@@ -32,5 +32,10 @@ public class Expense : IWorkflowEntity
     [Column("approval_status")] 
     public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
 
+    [Column("created_by_detective_id")]
+    public int? CreatedByDetectiveId { get; set; }
+
+    public Detective? CreatedByDetective { get; set; }
+
     public Case Case { get; set; } = null!;
 }

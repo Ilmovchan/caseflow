@@ -1,5 +1,6 @@
 using CaseFlow.BLL.Dto.Evidence;
 using CaseFlow.BLL.Services;
+using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -15,7 +16,10 @@ public class DetailsModel(DetectiveService detectiveService) : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _detectiveService.GetEvidenceAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var entity = await _detectiveService.GetEvidenceAsync(id, identity);
         if (entity == null) return NotFound();
         Evidence = entity;
         return Page();

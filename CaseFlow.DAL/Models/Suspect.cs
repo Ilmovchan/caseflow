@@ -68,5 +68,10 @@ public class Suspect : IWorkflowEntity
     [Column("approval_status")]
     public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Draft;
 
+    [Column("created_by_detective_id")]
+    public int? CreatedByDetectiveId { get; set; }
+
+    public Detective? CreatedByDetective { get; set; }
+
     public ICollection<CaseSuspect> CaseSuspects { get; set; } = new List<CaseSuspect>();
 }

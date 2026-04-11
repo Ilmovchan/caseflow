@@ -109,12 +109,6 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("case_id");
 
-                    b.Property<ApprovalStatus>("ApprovalStatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("approval_status")
-                        .HasDefaultValue(ApprovalStatus.Draft)
-                        .HasColumnName("approval_status");
-
                     b.HasKey("EvidenceId", "CaseId");
 
                     b.HasIndex("CaseId");
@@ -138,12 +132,6 @@ namespace CaseFlow.DAL.Migrations
                     b.Property<string>("Alibi")
                         .HasColumnType("text")
                         .HasColumnName("alibi");
-
-                    b.Property<ApprovalStatus>("ApprovalStatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("approval_status")
-                        .HasDefaultValue(ApprovalStatus.Draft)
-                        .HasColumnName("approval_status");
 
                     b.Property<bool>("IsInterrogated")
                         .HasColumnType("boolean")
@@ -465,7 +453,13 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("evidence_type")
                         .HasColumnName("type");
 
+                    b.Property<int?>("CreatedByDetectiveId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_detective_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByDetectiveId");
 
                     b.ToTable("evidence", t =>
                         {
@@ -511,9 +505,15 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("purpose");
 
+                    b.Property<int?>("CreatedByDetectiveId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_detective_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CaseId");
+
+                    b.HasIndex("CreatedByDetectiveId");
 
                     b.ToTable("expense", t =>
                         {
@@ -559,9 +559,15 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("text")
                         .HasColumnName("summary");
 
+                    b.Property<int?>("CreatedByDetectiveId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_detective_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CaseId");
+
+                    b.HasIndex("CreatedByDetectiveId");
 
                     b.ToTable("report", t =>
                         {
@@ -653,7 +659,13 @@ namespace CaseFlow.DAL.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("weight");
 
+                    b.Property<int?>("CreatedByDetectiveId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_detective_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByDetectiveId");
 
                     b.ToTable("suspect", t =>
                         {
@@ -749,7 +761,14 @@ namespace CaseFlow.DAL.Migrations
                         .IsRequired()
                         .HasConstraintName("expense_case_id_fk");
 
+                    b.HasOne("CaseFlow.DAL.Models.Detective", "CreatedByDetective")
+                        .WithMany()
+                        .HasForeignKey("CreatedByDetectiveId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Case");
+
+                    b.Navigation("CreatedByDetective");
                 });
 
             modelBuilder.Entity("CaseFlow.DAL.Models.Report", b =>
@@ -760,7 +779,14 @@ namespace CaseFlow.DAL.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_report_case_id");
 
+                    b.HasOne("CaseFlow.DAL.Models.Detective", "CreatedByDetective")
+                        .WithMany()
+                        .HasForeignKey("CreatedByDetectiveId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Case");
+
+                    b.Navigation("CreatedByDetective");
                 });
 
             modelBuilder.Entity("CaseFlow.DAL.Models.Case", b =>
@@ -791,12 +817,26 @@ namespace CaseFlow.DAL.Migrations
 
             modelBuilder.Entity("CaseFlow.DAL.Models.Evidence", b =>
                 {
+                    b.HasOne("CaseFlow.DAL.Models.Detective", "CreatedByDetective")
+                        .WithMany()
+                        .HasForeignKey("CreatedByDetectiveId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CaseEvidences");
+
+                    b.Navigation("CreatedByDetective");
                 });
 
             modelBuilder.Entity("CaseFlow.DAL.Models.Suspect", b =>
                 {
+                    b.HasOne("CaseFlow.DAL.Models.Detective", "CreatedByDetective")
+                        .WithMany()
+                        .HasForeignKey("CreatedByDetectiveId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CaseSuspects");
+
+                    b.Navigation("CreatedByDetective");
                 });
 #pragma warning restore 612, 618
         }

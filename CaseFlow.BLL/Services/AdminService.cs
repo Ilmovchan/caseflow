@@ -724,6 +724,8 @@ END $$;
         var evidence = await context.Evidences.FindAsync(evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
+        context.CaseEvidences.RemoveRange(
+            await context.CaseEvidences.Where(ce => ce.EvidenceId == evidenceId).ToListAsync());
         context.Evidences.Remove(evidence);
         await context.SaveChangesAsync();
     }
@@ -867,6 +869,8 @@ END $$;
         var suspect = await context.Suspects.FindAsync(suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
+        context.CaseSuspects.RemoveRange(
+            await context.CaseSuspects.Where(cs => cs.SuspectId == suspectId).ToListAsync());
         context.Suspects.Remove(suspect);
         await context.SaveChangesAsync();
     }
@@ -879,9 +883,6 @@ END $$;
         suspect.ApprovalStatus = status;
         await context.SaveChangesAsync();
     }
-
-    // Suspect approval methods removed - Suspect entity no longer has ApprovalStatus
-    // Approval status is managed through CaseSuspect junction table
 
     #endregion
 

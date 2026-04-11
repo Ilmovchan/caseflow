@@ -197,6 +197,11 @@ public partial class DetectiveAgencyDbContext : DbContext
             entity.Property(e => e.ApprovalStatus)
                 .HasColumnType("approval_status")
                 .HasDefaultValue(ApprovalStatus.Draft);
+
+            entity.HasOne(e => e.CreatedByDetective)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByDetectiveId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         
@@ -213,10 +218,6 @@ public partial class DetectiveAgencyDbContext : DbContext
                 .HasForeignKey(d => d.SuspectId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_case_suspect_suspect_id");
-            
-            entity.Property(e => e.ApprovalStatus)
-                .HasColumnType("approval_status")
-                .HasDefaultValue(ApprovalStatus.Draft);
 
             entity.ToTable(t =>
             {
@@ -237,10 +238,6 @@ public partial class DetectiveAgencyDbContext : DbContext
                 .HasForeignKey(d => d.EvidenceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_case_evidence_suspect_id");
-            
-            entity.Property(e => e.ApprovalStatus)
-                .HasColumnType("approval_status")
-                .HasDefaultValue(ApprovalStatus.Draft);
 
             entity.ToTable(t =>
             {
@@ -271,6 +268,11 @@ public partial class DetectiveAgencyDbContext : DbContext
             entity.Property(e => e.ApprovalStatus)
                 .HasColumnType("approval_status")
                 .HasDefaultValue(ApprovalStatus.Draft);
+
+            entity.HasOne(e => e.CreatedByDetective)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByDetectiveId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
         
         modelBuilder.Entity<Report>(entity =>
@@ -292,6 +294,11 @@ public partial class DetectiveAgencyDbContext : DbContext
             entity.Property(e => e.ApprovalStatus)
                 .HasColumnType("approval_status")
                 .HasDefaultValue(ApprovalStatus.Draft);
+
+            entity.HasOne(r => r.CreatedByDetective)
+                .WithMany()
+                .HasForeignKey(r => r.CreatedByDetectiveId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
         
         modelBuilder.Entity<Suspect>(entity =>
@@ -329,6 +336,11 @@ public partial class DetectiveAgencyDbContext : DbContext
             entity.Property(e => e.ApprovalStatus)
                 .HasColumnType("approval_status")
                 .HasDefaultValue(ApprovalStatus.Draft);
+
+            entity.HasOne(s => s.CreatedByDetective)
+                .WithMany()
+                .HasForeignKey(s => s.CreatedByDetectiveId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         OnModelCreatingPartial(modelBuilder);

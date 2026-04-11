@@ -29,6 +29,23 @@
 
 <div class="mt-4">
     <h4 class="mb-3">Пов’язані докази</h4>
+    @if (Model.LinkableEvidences.Count > 0)
+    {
+        <form method="post" asp-page-handler="LinkEvidence" asp-route-id="@Model.Case.Id" class="row g-2 align-items-end mb-3">
+            <div class="col-md-6">
+                <label class="form-label mb-0">Додати доказ до справи</label>
+                <select name="evidenceId" class="form-select form-select-sm" required>
+                    @foreach (var opt in Model.LinkableEvidences.OrderBy(x => x.EvidenceId))
+                    {
+                        <option value="@opt.EvidenceId">#@opt.EvidenceId — @opt.Description (@opt.Type)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Додати</button>
+            </div>
+        </form>
+    }
     @if (Model.Evidences.Count == 0)
     {
         <div class="text-muted">Немає пов’язаних доказів.</div>
@@ -44,6 +61,7 @@
                 <th class="text-center">Дата</th>
                 <th>Регіон</th>
                 <th class="text-center">Статус</th>
+                <th class="text-center">Дії</th>
             </tr>
             </thead>
             <tbody>
@@ -61,6 +79,12 @@
                     <td class="text-center">
                         <span class="badge bg-@color">@text</span>
                     </td>
+                    <td class="text-center" onclick="event.stopPropagation();">
+                        <form method="post" asp-page-handler="UnlinkEvidence" asp-route-id="@Model.Case.Id" class="d-inline">
+                            <input type="hidden" name="evidenceId" value="@e.EvidenceId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Відв’язати</button>
+                        </form>
+                    </td>
                 </tr>
             }
             </tbody>
@@ -70,6 +94,23 @@
 
 <div class="mt-4">
     <h4 class="mb-3">Пов’язані підозрювані</h4>
+    @if (Model.LinkableSuspects.Count > 0)
+    {
+        <form method="post" asp-page-handler="LinkSuspect" asp-route-id="@Model.Case.Id" class="row g-2 align-items-end mb-3">
+            <div class="col-md-6">
+                <label class="form-label mb-0">Додати підозрюваного до справи</label>
+                <select name="suspectId" class="form-select form-select-sm" required>
+                    @foreach (var opt in Model.LinkableSuspects.OrderBy(x => x.Id))
+                    {
+                        <option value="@opt.Id">#@opt.Id — @(opt.FullName ?? opt.Nickname ?? "?")</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Додати</button>
+            </div>
+        </form>
+    }
     @if (Model.Suspects.Count == 0)
     {
         <div class="text-muted">Немає пов’язаних підозрюваних.</div>
@@ -85,6 +126,7 @@
                 <th>Телефон</th>
                 <th>Місто</th>
                 <th class="text-center">Статус</th>
+                <th class="text-center">Дії</th>
             </tr>
             </thead>
             <tbody>
@@ -102,6 +144,12 @@
                     <td class="text-center">
                         <span class="badge bg-@color">@text</span>
                     </td>
+                    <td class="text-center" onclick="event.stopPropagation();">
+                        <form method="post" asp-page-handler="UnlinkSuspect" asp-route-id="@Model.Case.Id" class="d-inline">
+                            <input type="hidden" name="suspectId" value="@s.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Відв’язати</button>
+                        </form>
+                    </td>
                 </tr>
             }
             </tbody>
@@ -111,6 +159,23 @@
 
 <div class="mt-4">
     <h4 class="mb-3">Пов’язані звіти</h4>
+    @if (Model.AssignableReports.Count > 0)
+    {
+        <form method="post" asp-page-handler="AssignReport" asp-route-id="@Model.Case.Id" class="row g-2 align-items-end mb-3">
+            <div class="col-md-6">
+                <label class="form-label mb-0">Перемістити чернетку / відхилений звіт з іншої справи</label>
+                <select name="reportId" class="form-select form-select-sm" required>
+                    @foreach (var opt in Model.AssignableReports.OrderByDescending(x => x.ReportDate))
+                    {
+                        <option value="@opt.Id">#@opt.Id — справа @opt.CaseId: @opt.Summary.Substring(0, Math.Min(60, opt.Summary.Length))@(opt.Summary.Length > 60 ? "…" : "")</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Призначити цій справі</button>
+            </div>
+        </form>
+    }
     @if (Model.Reports.Count == 0)
     {
         <div class="text-muted">Немає пов’язаних звітів.</div>
@@ -148,6 +213,23 @@
 
 <div class="mt-4">
     <h4 class="mb-3">Пов’язані видатки</h4>
+    @if (Model.AssignableExpenses.Count > 0)
+    {
+        <form method="post" asp-page-handler="AssignExpense" asp-route-id="@Model.Case.Id" class="row g-2 align-items-end mb-3">
+            <div class="col-md-6">
+                <label class="form-label mb-0">Перемістити чернетку / відхилену видатку з іншої справи</label>
+                <select name="expenseId" class="form-select form-select-sm" required>
+                    @foreach (var opt in Model.AssignableExpenses.OrderByDescending(x => x.DateTime))
+                    {
+                        <option value="@opt.Id">#@opt.Id — справа @opt.CaseId: @opt.Purpose (@opt.Amount.ToString("C"))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Призначити цій справі</button>
+            </div>
+        </form>
+    }
     @if (Model.Expenses.Count == 0)
     {
         <div class="text-muted">Немає пов’язаних видатків.</div>

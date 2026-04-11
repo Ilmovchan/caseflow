@@ -29,7 +29,14 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
     {
         CurrentPage = pageNumber;
 
-        var allEvidences = await _detectiveService.GetEvidencesAsync();
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+        {
+            Evidences = [];
+            return;
+        }
+
+        var allEvidences = await _detectiveService.GetEvidencesAsync(identity);
         
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {

@@ -107,13 +107,31 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetEvidenceAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetEvidenceAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetEvidencesAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetEvidencesAsync(identity));
+    }
+
+    [HttpGet("linkable/case/{caseId:int}")]
+    public async Task<IActionResult> GetLinkableForCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetEvidencesLinkableToCaseAsync(caseId, identity));
+    }
 
     [HttpGet("case/{caseId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -218,12 +236,30 @@ public class DetectiveSuspectController(DetectiveService service) : ControllerBa
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
-        var item = await service.GetSuspectAsync(id);
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var item = await service.GetSuspectAsync(id, identity);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetSuspectsAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetSuspectsAsync(identity));
+    }
+
+    [HttpGet("linkable/case/{caseId:int}")]
+    public async Task<IActionResult> GetLinkableForCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetSuspectsLinkableToCaseAsync(caseId, identity));
+    }
 
     [HttpGet("case/{caseId:int}")]
     public async Task<IActionResult> GetFromCase(int caseId)
@@ -350,6 +386,25 @@ public class DetectiveExpenseController(DetectiveService service) : ControllerBa
         return Ok(await service.GetExpensesFromCaseAsync(caseId, identity));
     }
 
+    [HttpGet("assignable/case/{caseId:int}")]
+    public async Task<IActionResult> GetAssignableForCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetExpensesAssignableToCaseAsync(caseId, identity));
+    }
+
+    [HttpPost("{expenseId:int}/assign-case/{caseId:int}")]
+    public async Task<IActionResult> AssignToCase(int expenseId, int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.AssignExpenseToCaseAsync(expenseId, caseId, identity);
+        return Ok(updated);
+    }
+
     [HttpGet("approved")]
     public async Task<IActionResult> GetApproved()
     {
@@ -444,6 +499,25 @@ public class DetectiveReportController(DetectiveService service) : ControllerBas
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
         return Ok(await service.GetReportsFromCaseAsync(caseId, identity));
+    }
+
+    [HttpGet("assignable/case/{caseId:int}")]
+    public async Task<IActionResult> GetAssignableForCase(int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        return Ok(await service.GetReportsAssignableToCaseAsync(caseId, identity));
+    }
+
+    [HttpPost("{reportId:int}/assign-case/{caseId:int}")]
+    public async Task<IActionResult> AssignToCase(int reportId, int caseId)
+    {
+        var identity = DetectiveIdentity.FromUser(User);
+        if (string.IsNullOrEmpty(identity))
+            return Unauthorized();
+        var updated = await service.AssignReportToCaseAsync(reportId, caseId, identity);
+        return Ok(updated);
     }
 
     [HttpGet("approved")]
