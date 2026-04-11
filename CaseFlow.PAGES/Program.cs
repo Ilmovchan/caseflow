@@ -110,6 +110,17 @@ using (var scope = app.Services.CreateScope())
                 logger.LogError(ex, "Idempotent postgres_login schema patch failed (check DB permissions).");
             }
 
+            // Detective logins use their own PostgreSQL user (inherits group role `detective`). Table owner is
+            // typically the migration user, so detectives get 42501 until we grant DML + enum USAGE + sequences.
+            try
+            {
+                await ApplyDetectiveRoleGrantsAsync(dbContext);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Idempotent GRANT for role detective failed (run app startup as a DB superuser once).");
+            }
+
         // If the `detective.id` sequence is out of sync with existing rows, inserts may fail with
         // "duplicate key value violates unique constraint PK_detective". Reseed to MAX(id)+1.
         await dbContext.Database.ExecuteSqlRawAsync(@"
@@ -241,6 +252,49 @@ static async Task ApplyDetectivePostgresLoginSchemaPatchAsync(DetectiveAgencyDbC
     await dbContext.Database.ExecuteSqlRawAsync(
         """
         CREATE UNIQUE INDEX IF NOT EXISTS "IX_detective_postgres_login" ON detective (postgres_login);
+        """);
+}
+
+/// <summary>
+/// Grants the <c>detective</c> group role access to agency tables so EF works when detectives connect with their
+/// own Npgsql login. Row-level filtering (e.g. only assigned cases) stays in application code (<see cref="CaseFlow.BLL.Services.DetectiveService"/>).
+/// </summary>
+static async Task ApplyDetectiveRoleGrantsAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DO $grant$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'detective') THEN
+                CREATE ROLE detective NOLOGIN;
+            END IF;
+
+            GRANT USAGE ON SCHEMA public TO detective;
+
+            -- Cases: detectives read and may update fields via DetectiveService (no create/delete of cases).
+            GRANT SELECT, UPDATE ON TABLE "case" TO detective;
+            GRANT SELECT ON TABLE case_type TO detective;
+            GRANT SELECT ON TABLE client TO detective;
+            GRANT SELECT ON TABLE detective TO detective;
+
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE evidence TO detective;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE case_evidence TO detective;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE suspect TO detective;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE case_suspect TO detective;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE expense TO detective;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE report TO detective;
+
+            GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO detective;
+
+            GRANT USAGE ON TYPE case_status TO detective;
+            GRANT USAGE ON TYPE detective_status TO detective;
+            GRANT USAGE ON TYPE evidence_type TO detective;
+            GRANT USAGE ON TYPE approval_status TO detective;
+
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO detective;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO detective;
+        END
+        $grant$;
         """);
 }
 
