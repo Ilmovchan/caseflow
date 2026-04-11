@@ -59,16 +59,34 @@ var app = builder.Build();
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DetectiveAgencyDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInit");
+
     await db.Database.MigrateAsync();
 
     try
     {
-        await ApplyDetectiveRoleGrantsAsync(db);
+        await ApplyDetectivePostgresLoginSchemaPatchAsync(db);
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
-            .CreateLogger("DatabaseInit");
+        logger.LogWarning(ex,
+            "Could not apply legacy detective postgres_login / Users migration patch.");
+    }
+
+    try
+    {
+        if (!await AgencyTablesExistAsync(db))
+        {
+            logger.LogInformation(
+                "Skipping detective role grants: core tables are missing (ensure EF migrations exist in CaseFlow.DAL and are applied).");
+        }
+        else
+        {
+            await ApplyDetectiveRoleGrantsAsync(db);
+        }
+    }
+    catch (Exception ex)
+    {
         logger.LogWarning(ex,
             "Could not apply detective role grants (DB user may need CREATEROLE/superuser). Detective logins may fail until grants are applied manually.");
     }
@@ -88,8 +106,60 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
+static async Task<bool> AgencyTablesExistAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.OpenConnectionAsync();
+    try
+    {
+        await using var cmd = dbContext.Database.GetDbConnection().CreateCommand();
+        cmd.CommandText = """
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'case')
+            """;
+        var scalar = await cmd.ExecuteScalarAsync();
+        return scalar is bool b && b;
+    }
+    finally
+    {
+        await dbContext.Database.CloseConnectionAsync();
+    }
+}
 
+static async Task ApplyDetectivePostgresLoginSchemaPatchAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        ALTER TABLE detective ADD COLUMN IF NOT EXISTS postgres_login character varying(100);
+        """);
 
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_catalog.pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'Users'
+            ) THEN
+                UPDATE detective d
+                SET postgres_login = u."Username"
+                FROM "Users" u
+                WHERE u."Email" = d.email AND u."Role" = 'Detective';
+            END IF;
+        END $$;
+        """);
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DROP TABLE IF EXISTS "Users";
+        """);
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_detective_postgres_login" ON detective (postgres_login);
+        """);
+}
 
 /// <summary>
 /// Grants the <c>detective</c> group role access to agency tables so EF works when detectives connect with their
