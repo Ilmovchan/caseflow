@@ -15,6 +15,54 @@
     <dd class="col-sm-10">@Model.CaseType.Price</dd>
 </dl>
 
+<div class="mt-4">
+    <h4 class="mb-3">Справи цього типу</h4>
+    @if (Model.ConnectedCases.Count == 0)
+    {
+        <div class="text-muted">Немає справ з цим типом.</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th>Назва</th>
+                <th>Клієнт</th>
+                <th>Детектив</th>
+                <th class="text-center">Початок</th>
+                <th class="text-center">Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.ConnectedCases)
+            {
+                <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = c.Id })">
+                    <td class="text-center">@c.Id</td>
+                    <td>@c.Title</td>
+                    <td>
+                        @if (c.Client != null)
+                        {
+                            <a asp-page="/Admin/Clients/Details" asp-route-id="@c.ClientId" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Client.LastName} {c.Client.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td>
+                        @if (c.DetectiveId is int did && c.Detective != null)
+                        {
+                            <a asp-page="/Admin/Detectives/Details" asp-route-id="@did" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Detective.LastName} {c.Detective.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td class="text-center">@c.StartDate</td>
+                    <td class="text-center">@UkLabels.CaseStatusLabel(c.Status)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
 <p>
     <a asp-page="Edit" asp-route-id="@Model.CaseType.Id" class="btn btn-primary">Редагувати</a>
     <a asp-page="Index" class="btn btn-secondary">Назад</a>

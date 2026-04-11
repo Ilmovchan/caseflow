@@ -20,16 +20,15 @@ public static class DatabaseExtensions
     {
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
         dataSourceBuilder.EnableUnmappedTypes();
+        // Qualified names: avoids "more than one PostgreSQL type was found" when a duplicate type exists in another schema.
+        dataSourceBuilder.MapEnum<CaseStatus>("public.case_status");
+        dataSourceBuilder.MapEnum<DetectiveStatus>("public.detective_status");
+        dataSourceBuilder.MapEnum<EvidenceType>("public.evidence_type");
+        dataSourceBuilder.MapEnum<ApprovalStatus>("public.approval_status");
 
         var dataSource = dataSourceBuilder.Build();
 
-        options.UseNpgsql(dataSource, o =>
-        {
-            o.MapEnum<CaseStatus>("case_status");
-            o.MapEnum<DetectiveStatus>("detective_status");
-            o.MapEnum<EvidenceType>("evidence_type");
-            o.MapEnum<ApprovalStatus>("approval_status");
-        });
+        options.UseNpgsql(dataSource);
     }
 
     public static IServiceCollection ConfigureDatabase(

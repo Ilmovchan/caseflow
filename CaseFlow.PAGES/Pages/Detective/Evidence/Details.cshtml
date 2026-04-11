@@ -9,10 +9,19 @@
 <dl class="row">
     <dt class="col-sm-2">ID</dt>
     <dd class="col-sm-10">@Model.Evidence.EvidenceId</dd>
-    <dt class="col-sm-2">ID справи</dt>
-    <dd class="col-sm-10">@(Model.Evidence.CaseId?.ToString() ?? "—")</dd>
+    <dt class="col-sm-2">Справа</dt>
+    <dd class="col-sm-10">
+        @if (Model.Evidence.CaseId is int cid)
+        {
+            <a asp-page="/Detective/Cases/Details" asp-route-id="@cid">#@cid</a>
+        }
+        else
+        {
+            <span>—</span>
+        }
+    </dd>
     <dt class="col-sm-2">Тип</dt>
-    <dd class="col-sm-10">@Model.Evidence.Type</dd>
+    <dd class="col-sm-10">@UkLabels.EvidenceTypeLabel(Model.Evidence.Type)</dd>
     <dt class="col-sm-2">Опис</dt>
     <dd class="col-sm-10">@Model.Evidence.Description</dd>
     <dt class="col-sm-2">Дата збору</dt>

@@ -593,7 +593,9 @@ END $$;
     #region Evidence
 
     public async Task<Evidence?> GetEvidenceAsync(int evidenceId) =>
-        await context.Evidences.FindAsync(evidenceId);
+        await context.Evidences
+            .Include(e => e.CreatedByDetective)
+            .FirstOrDefaultAsync(e => e.Id == evidenceId);
 
     public async Task<List<Evidence>> GetEvidencesAsync() =>
         await context.Evidences.ToListAsync();
@@ -744,7 +746,9 @@ END $$;
     #region Suspect
 
     public async Task<Suspect?> GetSuspectAsync(int suspectId) =>
-        await context.Suspects.FindAsync(suspectId);
+        await context.Suspects
+            .Include(s => s.CreatedByDetective)
+            .FirstOrDefaultAsync(s => s.Id == suspectId);
 
     public async Task<List<Suspect>> GetSuspectsAsync() =>
         await context.Suspects.ToListAsync();
@@ -818,6 +822,15 @@ END $$;
             .Where(c => context.CaseSuspects.Any(cs => cs.CaseId == c.Id && cs.SuspectId == suspectId))
             .ToListAsync();
 
+    public async Task<List<Case>> GetCasesByCaseTypeIdAsync(int caseTypeId) =>
+        await context.Cases
+            .Include(c => c.CaseType)
+            .Include(c => c.Client)
+            .Include(c => c.Detective)
+            .Where(c => c.CaseTypeId == caseTypeId)
+            .OrderByDescending(c => c.StartDate)
+            .ToListAsync();
+
     public async Task<List<Suspect>> GetPendingSuspectsAsync() =>
         await context.Suspects
             .Where(s => s.ApprovalStatus == ApprovalStatus.Pending)
@@ -889,7 +902,9 @@ END $$;
     #region Expense
 
     public async Task<Expense?> GetExpenseAsync(int expenseId) =>
-        await context.Expenses.FindAsync(expenseId);
+        await context.Expenses
+            .Include(e => e.CreatedByDetective)
+            .FirstOrDefaultAsync(e => e.Id == expenseId);
 
     public async Task<List<Expense>> GetExpensesAsync() =>
         await context.Expenses.ToListAsync();
@@ -1025,7 +1040,9 @@ END $$;
     #region Report
 
     public async Task<Report?> GetReportAsync(int reportId) =>
-        await context.Reports.FindAsync(reportId);
+        await context.Reports
+            .Include(r => r.CreatedByDetective)
+            .FirstOrDefaultAsync(r => r.Id == reportId);
 
     public async Task<List<Report>> GetReportsAsync() =>
         await context.Reports.ToListAsync();

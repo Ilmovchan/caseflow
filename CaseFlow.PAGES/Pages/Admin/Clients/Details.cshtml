@@ -50,8 +50,20 @@
                 <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = c.Id })">
                     <td class="text-center">@c.Id</td>
                     <td>@c.Title</td>
-                    <td>@(c.Detective != null ? $"{c.Detective.LastName} {c.Detective.FirstName}" : "-")</td>
-                    <td>@(c.CaseType?.Name ?? "-")</td>
+                    <td>
+                        @if (c.DetectiveId is int did && c.Detective != null)
+                        {
+                            <a asp-page="/Admin/Detectives/Details" asp-route-id="@did" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Detective.LastName} {c.Detective.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td>
+                        @if (c.CaseType != null)
+                        {
+                            <a asp-page="/Admin/CaseTypes/Details" asp-route-id="@c.CaseTypeId" class="text-decoration-none" onclick="event.stopPropagation();">@c.CaseType.Name</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
                     <td class="text-center">@c.StartDate</td>
                     <td class="text-center">@c.DeadlineDate</td>
                     <td class="text-center">@(c.CloseDate?.ToString() ?? "-")</td>

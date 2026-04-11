@@ -1,5 +1,6 @@
 using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Exceptions;
+using CaseFlow.BLL.Localization;
 using CaseFlow.BLL.Services;
 using CaseFlow.DAL.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ public class EditModel(AdminService adminService) : PageModel
     public IEnumerable<SelectListItem> StatusOptions { get; set; } = Enum
         .GetValues(typeof(CaseStatus))
         .Cast<CaseStatus>()
-        .Select(s => new SelectListItem(s.ToString(), s.ToString()));
+        .Select(s => new SelectListItem(UkLabels.CaseStatusLabel(s), s.ToString()));
 
     public SelectList ClientOptions { get; set; } = null!;
     public SelectList DetectiveOptions { get; set; } = null!;

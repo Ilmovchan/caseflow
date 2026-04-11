@@ -23,9 +23,25 @@
     <dd class="col-sm-10">@Model.Expense.DateTime</dd>
     <dt class="col-sm-2">Статус</dt>
     <dd class="col-sm-10">
-        <span class="badge bg-@(Model.Expense.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Expense.ApprovalStatus.ToString() == "Pending" ? "warning" : "secondary")">
-            @Model.Expense.ApprovalStatus
+        <span class="badge bg-@(Model.Expense.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Expense.ApprovalStatus.ToString() == "Pending" ? "warning" : Model.Expense.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary")">
+            @UkLabels.ApprovalStatusLabel(Model.Expense.ApprovalStatus)
         </span>
+    </dd>
+    <dt class="col-sm-2">Створив детектив</dt>
+    <dd class="col-sm-10">
+        @if (Model.Expense.CreatedByDetectiveId is int creatorId && Model.Expense.CreatedByDetective != null)
+        {
+            var cd = Model.Expense.CreatedByDetective;
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@creatorId">#@creatorId — @cd.LastName @cd.FirstName</a>
+        }
+        else if (Model.Expense.CreatedByDetectiveId is int onlyId)
+        {
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@onlyId">#@onlyId</a>
+        }
+        else
+        {
+            <span>—</span>
+        }
     </dd>
     <dt class="col-sm-2">Примітка</dt>
     <dd class="col-sm-10">@(Model.Expense.Annotation ?? "-")</dd>

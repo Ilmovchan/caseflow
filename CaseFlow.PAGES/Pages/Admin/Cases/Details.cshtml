@@ -13,13 +13,26 @@
         <dt class="col-sm-2">Назва</dt>
         <dd class="col-sm-10">@Model.Case.Title</dd>
         <dt class="col-sm-2">Статус</dt>
-        <dd class="col-sm-10">@Model.Case.Status</dd>
-        <dt class="col-sm-2">ID клієнта</dt>
-        <dd class="col-sm-10">@Model.Case.ClientId</dd>
-        <dt class="col-sm-2">ID детектива</dt>
-        <dd class="col-sm-10">@(Model.Case.DetectiveId?.ToString() ?? "-")</dd>
-        <dt class="col-sm-2">ID типу справи</dt>
-        <dd class="col-sm-10">@Model.Case.CaseTypeId</dd>
+        <dd class="col-sm-10">@UkLabels.CaseStatusLabel(Model.Case.Status)</dd>
+        <dt class="col-sm-2">Клієнт</dt>
+        <dd class="col-sm-10">
+            <a asp-page="/Admin/Clients/Details" asp-route-id="@Model.Case.ClientId">#@Model.Case.ClientId — @(Model.Case.Client != null ? $"{Model.Case.Client.LastName} {Model.Case.Client.FirstName}" : "")</a>
+        </dd>
+        <dt class="col-sm-2">Детектив</dt>
+        <dd class="col-sm-10">
+            @if (Model.Case.DetectiveId is int detId)
+            {
+                <a asp-page="/Admin/Detectives/Details" asp-route-id="@detId">#@detId — @(Model.Case.Detective != null ? $"{Model.Case.Detective.LastName} {Model.Case.Detective.FirstName}" : "")</a>
+            }
+            else
+            {
+                <span>—</span>
+            }
+        </dd>
+        <dt class="col-sm-2">Тип справи</dt>
+        <dd class="col-sm-10">
+            <a asp-page="/Admin/CaseTypes/Details" asp-route-id="@Model.Case.CaseTypeId">#@Model.Case.CaseTypeId — @(Model.Case.CaseType?.Name ?? "")</a>
+        </dd>
         <dt class="col-sm-2">Початок</dt>
         <dd class="col-sm-10">@Model.Case.StartDate</dd>
         <dt class="col-sm-2">Термін</dt>

@@ -10,12 +10,14 @@ public class DetailsModel(AdminService adminService) : PageModel
     private readonly AdminService _adminService = adminService;
 
     public CaseType CaseType { get; set; } = null!;
+    public List<Case> ConnectedCases { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var entity = await _adminService.GetCaseTypeAsync(id);
         if (entity == null) return NotFound();
         CaseType = entity;
+        ConnectedCases = await _adminService.GetCasesByCaseTypeIdAsync(id);
         return Page();
     }
 }

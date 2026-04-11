@@ -12,7 +12,7 @@
     <dt class="col-sm-2">ПІБ</dt>
     <dd class="col-sm-10">@Model.Detective.LastName @Model.Detective.FirstName @Model.Detective.FatherName</dd>
     <dt class="col-sm-2">Статус</dt>
-    <dd class="col-sm-10">@Model.Detective.Status</dd>
+    <dd class="col-sm-10">@UkLabels.DetectiveStatusLabel(Model.Detective.Status)</dd>
     <dt class="col-sm-2">Email</dt>
     <dd class="col-sm-10">@Model.Detective.Email</dd>
     <dt class="col-sm-2">Телефон</dt>
@@ -50,8 +50,20 @@
                 <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = c.Id })">
                     <td class="text-center">@c.Id</td>
                     <td>@c.Title</td>
-                    <td>@(c.Client != null ? $"{c.Client.LastName} {c.Client.FirstName}" : "-")</td>
-                    <td>@(c.CaseType?.Name ?? "-")</td>
+                    <td>
+                        @if (c.Client != null)
+                        {
+                            <a asp-page="/Admin/Clients/Details" asp-route-id="@c.ClientId" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Client.LastName} {c.Client.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td>
+                        @if (c.CaseType != null)
+                        {
+                            <a asp-page="/Admin/CaseTypes/Details" asp-route-id="@c.CaseTypeId" class="text-decoration-none" onclick="event.stopPropagation();">@c.CaseType.Name</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
                     <td class="text-center">@c.StartDate</td>
                     <td class="text-center">@c.DeadlineDate</td>
                     <td class="text-center">@(c.CloseDate?.ToString() ?? "-")</td>

@@ -38,15 +38,15 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
     private static bool IsDraftOrDeclined(ApprovalStatus s) =>
         s is ApprovalStatus.Draft or ApprovalStatus.Declined;
 
+    /// <summary>Approved for everyone; otherwise any row created by this detective (any approval status).</summary>
     private static bool EvidenceCatalogVisible(Evidence e, int detectiveId) =>
         e.ApprovalStatus == ApprovalStatus.Approved
-        || (DetectiveOwnsEntity(e.CreatedByDetectiveId, detectiveId)
-            && e.ApprovalStatus is ApprovalStatus.Draft or ApprovalStatus.Pending or ApprovalStatus.Declined);
+        || DetectiveOwnsEntity(e.CreatedByDetectiveId, detectiveId);
 
+    /// <summary>Approved for everyone; otherwise any row created by this detective (any approval status).</summary>
     private static bool SuspectCatalogVisible(Suspect s, int detectiveId) =>
         s.ApprovalStatus == ApprovalStatus.Approved
-        || (DetectiveOwnsEntity(s.CreatedByDetectiveId, detectiveId)
-            && s.ApprovalStatus is ApprovalStatus.Draft or ApprovalStatus.Pending or ApprovalStatus.Declined);
+        || DetectiveOwnsEntity(s.CreatedByDetectiveId, detectiveId);
 
     private async Task<HashSet<int>> GetAllowedCaseIdsForDetectiveIdentityAsync(string identity)
     {
@@ -349,7 +349,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
         };
     }
 
-    /// <summary>Approved catalog plus this detective's draft/pending/declined; <see cref="EvidenceCaseDto.CaseId"/> is a representative link if any.</summary>
+    /// <summary>All approved evidences plus any row created by this detective (any status). <see cref="EvidenceCaseDto.CaseId"/> is a representative link if any.</summary>
     public async Task<List<EvidenceCaseDto>> GetEvidencesAsync(string detectiveIdentity)
     {
         var detId = await GetDetectiveIdForIdentityAsync(detectiveIdentity);
@@ -357,11 +357,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             return [];
 
         var evidences = await context.Evidences.AsNoTracking()
-            .Where(e => e.ApprovalStatus == ApprovalStatus.Approved
-                        || (e.CreatedByDetectiveId == detId
-                            && (e.ApprovalStatus == ApprovalStatus.Draft
-                                || e.ApprovalStatus == ApprovalStatus.Pending
-                                || e.ApprovalStatus == ApprovalStatus.Declined)))
+            .Where(e => e.ApprovalStatus == ApprovalStatus.Approved || e.CreatedByDetectiveId == detId)
             .OrderBy(e => e.Id)
             .ToListAsync();
 
@@ -655,11 +651,7 @@ public class DetectiveService(DetectiveAgencyDbContext context, IMapper mapper)
             return [];
 
         var suspects = await context.Suspects.AsNoTracking()
-            .Where(s => s.ApprovalStatus == ApprovalStatus.Approved
-                        || (s.CreatedByDetectiveId == detId
-                            && (s.ApprovalStatus == ApprovalStatus.Draft
-                                || s.ApprovalStatus == ApprovalStatus.Pending
-                                || s.ApprovalStatus == ApprovalStatus.Declined)))
+            .Where(s => s.ApprovalStatus == ApprovalStatus.Approved || s.CreatedByDetectiveId == detId)
             .OrderBy(s => s.Id)
             .ToListAsync();
 

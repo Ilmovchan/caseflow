@@ -19,9 +19,25 @@
     <dd class="col-sm-10">@Model.Report.ReportDate</dd>
     <dt class="col-sm-2">Статус</dt>
     <dd class="col-sm-10">
-        <span class="badge bg-@(Model.Report.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Report.ApprovalStatus.ToString() == "Pending" ? "warning" : "secondary")">
-            @Model.Report.ApprovalStatus
+        <span class="badge bg-@(Model.Report.ApprovalStatus.ToString() == "Approved" ? "success" : Model.Report.ApprovalStatus.ToString() == "Pending" ? "warning" : Model.Report.ApprovalStatus.ToString() == "Declined" ? "danger" : "secondary")">
+            @UkLabels.ApprovalStatusLabel(Model.Report.ApprovalStatus)
         </span>
+    </dd>
+    <dt class="col-sm-2">Створив детектив</dt>
+    <dd class="col-sm-10">
+        @if (Model.Report.CreatedByDetectiveId is int creatorId && Model.Report.CreatedByDetective != null)
+        {
+            var cd = Model.Report.CreatedByDetective;
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@creatorId">#@creatorId — @cd.LastName @cd.FirstName</a>
+        }
+        else if (Model.Report.CreatedByDetectiveId is int onlyId)
+        {
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@onlyId">#@onlyId</a>
+        }
+        else
+        {
+            <span>—</span>
+        }
     </dd>
     <dt class="col-sm-2">Резюме</dt>
     <dd class="col-sm-10">@Model.Report.Summary</dd>

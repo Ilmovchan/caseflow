@@ -10,7 +10,7 @@
     <dt class="col-sm-2">ID</dt>
     <dd class="col-sm-10">@Model.Evidence.Id</dd>
     <dt class="col-sm-2">Тип</dt>
-    <dd class="col-sm-10">@Model.Evidence.Type</dd>
+    <dd class="col-sm-10">@UkLabels.EvidenceTypeLabel(Model.Evidence.Type)</dd>
     <dt class="col-sm-2">Опис</dt>
     <dd class="col-sm-10">@Model.Evidence.Description</dd>
     <dt class="col-sm-2">Дата збору</dt>
@@ -21,6 +21,24 @@
     <dd class="col-sm-10">@(Model.Evidence.Annotation ?? "-")</dd>
     <dt class="col-sm-2">Мета</dt>
     <dd class="col-sm-10">@(Model.Evidence.Purpose ?? "-")</dd>
+    <dt class="col-sm-2">Статус погодження</dt>
+    <dd class="col-sm-10">@UkLabels.ApprovalStatusLabel(Model.Evidence.ApprovalStatus)</dd>
+    <dt class="col-sm-2">Створив детектив</dt>
+    <dd class="col-sm-10">
+        @if (Model.Evidence.CreatedByDetectiveId is int creatorId && Model.Evidence.CreatedByDetective != null)
+        {
+            var cd = Model.Evidence.CreatedByDetective;
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@creatorId">#@creatorId — @cd.LastName @cd.FirstName</a>
+        }
+        else if (Model.Evidence.CreatedByDetectiveId is int onlyId)
+        {
+            <a asp-page="/Admin/Detectives/Details" asp-route-id="@onlyId">#@onlyId</a>
+        }
+        else
+        {
+            <span>—</span>
+        }
+    </dd>
 </dl>
 
 <div class="mt-4">
@@ -51,9 +69,27 @@
                 <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = c.Id })">
                     <td class="text-center">@c.Id</td>
                     <td>@c.Title</td>
-                    <td>@(c.Client != null ? $"{c.Client.LastName} {c.Client.FirstName}" : "-")</td>
-                    <td>@(c.Detective != null ? $"{c.Detective.LastName} {c.Detective.FirstName}" : "-")</td>
-                    <td>@(c.CaseType?.Name ?? "-")</td>
+                    <td>
+                        @if (c.Client != null)
+                        {
+                            <a asp-page="/Admin/Clients/Details" asp-route-id="@c.ClientId" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Client.LastName} {c.Client.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td>
+                        @if (c.DetectiveId is int did && c.Detective != null)
+                        {
+                            <a asp-page="/Admin/Detectives/Details" asp-route-id="@did" class="text-decoration-none" onclick="event.stopPropagation();">@($"{c.Detective.LastName} {c.Detective.FirstName}")</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td>
+                        @if (c.CaseType != null)
+                        {
+                            <a asp-page="/Admin/CaseTypes/Details" asp-route-id="@c.CaseTypeId" class="text-decoration-none" onclick="event.stopPropagation();">@c.CaseType.Name</a>
+                        }
+                        else { <span>—</span> }
+                    </td>
                     <td class="text-center">@c.StartDate</td>
                     <td class="text-center">@c.DeadlineDate</td>
                     <td class="text-center">@(c.CloseDate?.ToString() ?? "-")</td>
