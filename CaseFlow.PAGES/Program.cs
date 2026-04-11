@@ -78,17 +78,35 @@ await using (var scope = app.Services.CreateAsyncScope())
         if (!await AgencyTablesExistAsync(db))
         {
             logger.LogInformation(
-                "Skipping detective role grants: core tables are missing (EnsureCreated did not create schema; check connection and permissions).");
+                "Skipping detective/admin role grants: core tables are missing (EnsureCreated did not create schema; check connection and permissions).");
         }
         else
         {
-            await ApplyDetectiveRoleGrantsAsync(db);
+            try
+            {
+                await ApplyDetectiveRoleGrantsAsync(db);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Could not apply detective role grants (DB user may need CREATEROLE/superuser). Detective logins may fail until grants are applied manually.");
+            }
+
+            try
+            {
+                await ApplyAdminRoleGrantsAsync(db);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Could not apply admin role grants (DB user may need superuser or table owner). Admin panel may return permission denied until grants are applied manually.");
+            }
         }
     }
     catch (Exception ex)
     {
         logger.LogWarning(ex,
-            "Could not apply detective role grants (DB user may need CREATEROLE/superuser). Detective logins may fail until grants are applied manually.");
+            "Could not verify schema for DB role grants.");
     }
 }
 
@@ -199,6 +217,48 @@ static async Task ApplyDetectiveRoleGrantsAsync(DetectiveAgencyDbContext dbConte
 
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO detective;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO detective;
+        END
+        $grant$;
+        """);
+}
+
+/// <summary>
+/// Grants the <c>admin</c> group role full DML on agency tables. Admins sign in with their own PostgreSQL login
+/// (<see cref="CaseFlow.BLL.Services.AuthService"/> checks <c>pg_has_role(current_user, 'admin', 'member')</c>), so
+/// that login must inherit privileges from <c>admin</c> — same pattern as <c>detective</c>.
+/// </summary>
+static async Task ApplyAdminRoleGrantsAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        DO $grant$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'admin') THEN
+                CREATE ROLE admin NOLOGIN;
+            END IF;
+
+            GRANT USAGE ON SCHEMA public TO admin;
+
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "case" TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE case_type TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE client TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE detective TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE evidence TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE case_evidence TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE suspect TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE case_suspect TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE expense TO admin;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE report TO admin;
+
+            GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO admin;
+
+            GRANT USAGE ON TYPE case_status TO admin;
+            GRANT USAGE ON TYPE detective_status TO admin;
+            GRANT USAGE ON TYPE evidence_type TO admin;
+            GRANT USAGE ON TYPE approval_status TO admin;
+
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO admin;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO admin;
         END
         $grant$;
         """);
