@@ -467,11 +467,26 @@ END $$;
     private static string QuotePgIdent(string name) =>
         "\"" + name.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
+    /// <summary>
+    /// PostgreSQL does not accept bind parameters in CREATE ROLE PASSWORD; Npgsql would send $1 and the
+    /// server returns 42601 "syntax error at or near $1". Use a dollar-quoted literal instead.
+    /// </summary>
+    private static string DollarQuoteForPg(string value)
+    {
+        for (var i = 0; ; i++)
+        {
+            var tag = i == 0 ? "cfpwd" : $"cfpwd{i}";
+            var delim = "$" + tag + "$";
+            if (!value.Contains(delim, StringComparison.Ordinal))
+                return delim + value + delim;
+        }
+    }
+
     private static async Task CreateDetectivePostgresRoleAsync(NpgsqlConnection conn, string username, string password)
     {
+        var pwdLiteral = DollarQuoteForPg(password);
         await using var create = new NpgsqlCommand(
-            $"CREATE ROLE {QuotePgIdent(username)} WITH LOGIN PASSWORD @pwd INHERIT", conn);
-        create.Parameters.AddWithValue("pwd", password);
+            $"CREATE ROLE {QuotePgIdent(username)} WITH LOGIN PASSWORD {pwdLiteral} INHERIT", conn);
         await create.ExecuteNonQueryAsync();
         await using var grant = new NpgsqlCommand(
             $"GRANT detective TO {QuotePgIdent(username)}", conn);
