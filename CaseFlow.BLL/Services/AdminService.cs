@@ -430,6 +430,15 @@ END $$;
             {
                 throw new InvalidOperationException("This username is already taken", ex);
             }
+            catch (PostgresException ex) when (ex.SqlState == "42501")
+            {
+                throw new InvalidOperationException(
+                    "The PostgreSQL login in your app connection string is not allowed to create roles. " +
+                    "Connect as a superuser and grant the app user CREATEROLE plus the right to grant group membership in detective, " +
+                    "for example: ALTER ROLE your_app_user CREATEROLE; GRANT detective TO your_app_user WITH ADMIN OPTION; " +
+                    "(replace your_app_user with the Username from your connection string).",
+                    ex);
+            }
         }
         finally
         {
