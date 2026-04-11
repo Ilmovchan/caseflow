@@ -1,1 +1,0 @@
-CALL generate_payment_receipt(2);
