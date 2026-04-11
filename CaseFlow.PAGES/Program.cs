@@ -55,13 +55,13 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-// Create/update schema from EF migrations when the database is empty or behind (e.g. tables dropped).
+// Create schema from the current model if the database is empty (no migrations; model changes require drop/recreate).
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DetectiveAgencyDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInit");
 
-    await db.Database.MigrateAsync();
+    await db.Database.EnsureCreatedAsync();
 
     try
     {
@@ -78,7 +78,7 @@ await using (var scope = app.Services.CreateAsyncScope())
         if (!await AgencyTablesExistAsync(db))
         {
             logger.LogInformation(
-                "Skipping detective role grants: core tables are missing (ensure EF migrations exist in CaseFlow.DAL and are applied).");
+                "Skipping detective role grants: core tables are missing (EnsureCreated did not create schema; check connection and permissions).");
         }
         else
         {
