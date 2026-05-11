@@ -6,81 +6,60 @@ public static class ConstraintViolationMapper
 {
     private static readonly Dictionary<string, string> ConstraintMessages = new()
     {
-        // Name constraints
-        { "name_format", "Names must contain only Ukrainian letters (А-Я, І, Ї, Є, а-я, і, ї, є)" },
-        
-        // Phone constraints
-        { "phone_number_format", "Phone number must be in format: +380XXXXXXXXX (e.g., +380991234567)" },
-        
-        // Email constraints
-        { "email_format", "Email must be in valid format (e.g., user@example.com)" },
-        
-        // Date constraints
-        { "date_of_birth_format", "Date of birth cannot be in the future" },
-        { "date_format", "Report date cannot be in the future" },
-        { "detective_hire_date_format", "Hire date cannot be in the future" },
-        { "collection_date_format", "Collection date cannot be in the future" },
-        { "date_time_format", "Date and time cannot be in the future" },
-        
-        // Region/City/Street constraints
-        { "region_format", "Region must contain only Ukrainian letters" },
-        { "city_format", "City must contain only Ukrainian letters and hyphens" },
-        { "street_format", "Street must contain only Ukrainian letters, spaces, and hyphens" },
-        
-        // Building/Apartment constraints
-        { "building_number_format", "Building number must contain only numbers and slashes (e.g., 123 or 123/1)" },
-        { "apartment_number_format", "Apartment number must be a positive number" },
-        
-        // Salary/Amount constraints
-        { "detective_salary_format", "Salary must be a positive number" },
-        { "amount_format", "Amount must be a positive number" },
-        
-        // Purpose constraints
-        { "purpose_format", "Purpose contains invalid characters" },
-        
-        // Type constraints
-        { "type_format", "Type contains invalid characters" },
-        
-        // Weight/Height constraints
-        { "weight_height_format", "Weight and height must both be positive numbers" },
-        
-        // Deadline constraints
-        { "deadline_format", "Deadline date must be after or equal to start date" },
-        { "close_date_format", "Close date must be after or equal to start date" }
+        { "name_format", "Прізвище, ім'я та по батькові — лише українські літери (А-Я, І, Ї, Є)." },
+        { "phone_number_format", "Телефон у форматі +380XXXXXXXXX (наприклад, +380991234567)." },
+        { "email_format", "Електронна пошта має бути у коректному форматі (наприклад, user@example.com)." },
+        { "date_of_birth_format", "Дата народження не може бути в майбутньому." },
+        { "date_format", "Дата звіту не може бути в майбутньому." },
+        { "detective_hire_date_format", "Дата прийому на роботу не може бути в майбутньому." },
+        { "collection_date_format", "Дата збору не може бути в майбутньому." },
+        { "date_time_format", "Дата й час не можуть бути в майбутньому." },
+        { "region_format", "Регіон: лише українські літери." },
+        { "city_format", "Місто: лише українські літери та дефіси." },
+        { "street_format", "Вулиця: лише українські літери, пробіли та дефіси." },
+        { "building_number_format", "Номер будинку: лише цифри та слеші (наприклад, 126/1)." },
+        { "apartment_number_format", "Номер квартири має бути додатним числом." },
+        { "detective_salary_format", "Зарплата має бути додатним числом." },
+        { "amount_format", "Сума має бути додатним числом." },
+        { "purpose_format", "Призначення містить недопустимі символи." },
+        { "type_format", "Тип містить недопустимі символи." },
+        { "weight_height_format", "Зріст і вага: заповніть обидва додатні числа або залиште обидва поля порожніми." },
+        { "deadline_format", "Дедлайн має бути не раніше за дату початку." },
+        { "close_date_format", "Дата закриття має бути не раніше за дату початку." }
     };
 
     public static string GetUserFriendlyMessage(string constraintName)
     {
         return ConstraintMessages.TryGetValue(constraintName, out var message)
             ? message
-            : $"Invalid data: {constraintName}";
+            : $"Некоректні дані: {constraintName}";
     }
 
     public static ConstraintViolationException? TryExtractConstraintViolation(Exception ex)
     {
-        if (ex is PostgresException pgEx && pgEx.SqlState == "23514")
+        for (var cur = ex; cur != null; cur = cur.InnerException)
         {
-            // Extract constraint name from the error message
-            // Format: "new row for relation "table_name" violates check constraint "constraint_name""
-            var constraintMatch = System.Text.RegularExpressions.Regex.Match(
-                pgEx.Message,
-                @"violates check constraint ""([^""]+)""");
-
-            if (constraintMatch.Success)
+            if (cur is PostgresException pgEx && pgEx.SqlState == "23514")
             {
-                var constraintName = constraintMatch.Groups[1].Value;
-                var userMessage = GetUserFriendlyMessage(constraintName);
-                return new ConstraintViolationException(constraintName, userMessage);
-            }
-        }
+                var constraintMatch = System.Text.RegularExpressions.Regex.Match(
+                    pgEx.Message,
+                    @"violates check constraint ""([^""]+)""");
 
-        // Numeric overflow (e.g., numeric(10,2) too large)
-        if (ex is PostgresException pgExOverflow && pgExOverflow.SqlState == "22003")
-        {
-            return new ConstraintViolationException(
-                "numeric_overflow",
-                "Числове значення завелике. Перевірте поля з сумою/ціною (макс: 99 999 999.99)."
-            );
+                if (constraintMatch.Success)
+                {
+                    var constraintName = constraintMatch.Groups[1].Value;
+                    var userMessage = GetUserFriendlyMessage(constraintName);
+                    return new ConstraintViolationException(constraintName, userMessage);
+                }
+            }
+
+            if (cur is PostgresException pgOverflow && pgOverflow.SqlState == "22003")
+            {
+                return new ConstraintViolationException(
+                    "numeric_overflow",
+                    "Числове значення завелике. Перевірте поля з сумою/ціною (макс: 99 999 999.99)."
+                );
+            }
         }
 
         return null;

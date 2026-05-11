@@ -16,6 +16,5 @@ public class ClientDto
     public int? ApartmentNumber { get; set; }
     public DateTime RegistrationDate { get; set; }
     
-    // Computed property for full name
     public string FullName => $"{LastName} {FirstName}" + (FatherName != null ? $" {FatherName}" : "");
 }

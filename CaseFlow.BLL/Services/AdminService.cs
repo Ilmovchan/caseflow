@@ -18,9 +18,27 @@ using System.Text.RegularExpressions;
 
 namespace CaseFlow.BLL.Services;
 
-public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
+/// <summary>Логіка адміна; при RLS з’єднання під PG-адміном. Чернетки приховуються в LINQ через обхід RLS власником таблиці.</summary>
+public partial class AdminService(
+    DetectiveAgencyDbContext context,
+    IMapper mapper,
+    IAdminRlsExecutionContext adminRls)
 {
-    #region Case
+    public bool RowLevelSecurityAuthoritative => adminRls.RowLevelSecurityAdminPoliciesActive;
+
+    private IQueryable<Evidence> EvidencesVisibleToAdmin =>
+        context.Evidences.Where(e => e.ApprovalStatus != ApprovalStatus.Draft);
+
+    private IQueryable<Suspect> SuspectsVisibleToAdmin =>
+        context.Suspects.Where(s => s.ApprovalStatus != ApprovalStatus.Draft);
+
+    private IQueryable<Expense> ExpensesVisibleToAdmin =>
+        context.Expenses.Where(e => e.ApprovalStatus != ApprovalStatus.Draft);
+
+    private IQueryable<Report> ReportsVisibleToAdmin =>
+        context.Reports.Where(r => r.ApprovalStatus != ApprovalStatus.Draft);
+
+    #region Справи
 
     public async Task<Case?> GetCaseAsync(int caseId) =>
         await context.Cases
@@ -69,7 +87,6 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
             .Include(c => c.Detective)
             .AsQueryable();
 
-        // First, fetch all data then filter in memory for complex searches
         var allItems = await query.ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -109,14 +126,14 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
     public async Task<Case> CreateCaseAsync(CreateCaseDto dto)
     {
         if (!await context.Clients.AnyAsync(e => e.Id == dto.ClientId))
-            throw new ArgumentException($"Client with id {dto.ClientId} does not exist");
+            throw new ArgumentException($"Клієнт з id {dto.ClientId} не існує");
 
         if (!await context.CaseTypes.AnyAsync(ct => ct.Id == dto.CaseTypeId))
-            throw new ArgumentException($"CaseType with id {dto.CaseTypeId} does not exist");
+            throw new ArgumentException($"Тип справи з id {dto.CaseTypeId} не існує");
 
         if (dto.DetectiveId.HasValue &&
             !await context.Detectives.AnyAsync(d => d.Id == dto.DetectiveId.Value))
-            throw new ArgumentException($"Detective with id {dto.DetectiveId} does not exist");
+            throw new ArgumentException($"Детектив з id {dto.DetectiveId} не існує");
 
         var caseEntity = mapper.Map<Case>(dto);
         context.Cases.Add(caseEntity);
@@ -128,7 +145,6 @@ public class AdminService(DetectiveAgencyDbContext context, IMapper mapper)
                                               pg.SqlState == "23505" &&
                                               string.Equals(pg.ConstraintName, "PK_case", StringComparison.OrdinalIgnoreCase))
         {
-            // Sequence may be out of sync with existing rows; reseed and retry once.
             await ReseedCaseIdSequenceAsync();
             await context.SaveChangesAsync();
         }
@@ -181,7 +197,7 @@ END $$;
 
     #endregion
 
-    #region Client
+    #region Клієнти
 
     public async Task<Client?> GetClientAsync(int clientId) =>
         await context.Clients.FindAsync(clientId);
@@ -284,7 +300,7 @@ END $$;
 
     #endregion
 
-    #region Detective
+    #region Детективи
 
     public async Task<Detective?> GetDetectiveAsync(int detectiveId) =>
         await context.Detectives.FindAsync(detectiveId);
@@ -370,13 +386,9 @@ END $$;
                                               pg.SqlState == "23505" &&
                                               string.Equals(pg.ConstraintName, "PK_detective", StringComparison.OrdinalIgnoreCase))
         {
-            // Sequence may be out of sync with existing rows; reseed and retry once.
             await ReseedDetectiveIdSequenceAsync();
             await context.SaveChangesAsync();
         }
-
-        // PostgreSQL: CREATE ROLE detective_ivanov LOGIN PASSWORD '...' INHERIT;
-        // GRANT detective TO detective_ivanov;
 
         return detectiveEntity;
     }
@@ -391,32 +403,32 @@ END $$;
     public async Task<DetectiveAccountCreatedDto> CreateDetectiveAccountAsync(int detectiveId, string username, string password)
     {
         if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentException("Username is required");
+            throw new ArgumentException("Потрібне ім’я користувача");
         if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password is required");
+            throw new ArgumentException("Потрібен пароль");
         if (password.Length < 6)
-            throw new ArgumentException("Password must be at least 6 characters");
+            throw new ArgumentException("Пароль має бути не коротший за 6 символів");
 
         username = username.Trim();
         if (!Regex.IsMatch(username, "^[a-zA-Z0-9_]+$"))
-            throw new ArgumentException("Username can contain only English letters, numbers, and underscore");
+            throw new ArgumentException("Логін: лише латинські літери, цифри та підкреслення");
 
         var detective = await context.Detectives.FindAsync(detectiveId)
             ?? throw new EntityNotFoundException("Detective", detectiveId);
 
         if (detective.PostgresLogin != null)
-            throw new InvalidOperationException("This detective already has a login");
+            throw new InvalidOperationException("У цього детектива вже є обліковий запис");
 
         var usernameExists = await context.Detectives.AnyAsync(d =>
             d.PostgresLogin != null && d.PostgresLogin.ToLower() == username.ToLower());
         if (usernameExists)
-            throw new InvalidOperationException("This username is already taken");
+            throw new InvalidOperationException("Такий логін уже зайнятий");
 
         var emailExists = await context.Detectives.AnyAsync(d =>
             d.PostgresLogin != null &&
             d.Email.ToLower() == detective.Email.ToLower());
         if (emailExists)
-            throw new InvalidOperationException("An account for this detective already exists");
+            throw new InvalidOperationException("Обліковий запис для цього детектива вже існує");
 
         await context.Database.OpenConnectionAsync();
         try
@@ -428,15 +440,13 @@ END $$;
             }
             catch (PostgresException ex) when (ex.SqlState == "42710")
             {
-                throw new InvalidOperationException("This username is already taken", ex);
+                throw new InvalidOperationException("Такий логін уже зайнятий", ex);
             }
             catch (PostgresException ex) when (ex.SqlState == "42501")
             {
                 throw new InvalidOperationException(
-                    "The PostgreSQL login in your app connection string is not allowed to create roles. " +
-                    "Connect as a superuser and grant the app user CREATEROLE plus the right to grant group membership in detective, " +
-                    "for example: ALTER ROLE your_app_user CREATEROLE; GRANT detective TO your_app_user WITH ADMIN OPTION; " +
-                    "(replace your_app_user with the Username from your connection string).",
+                    "Користувач підключення до БД не має права створювати ролі. Увійдіть як суперкористувач PostgreSQL і надайте ролі з рядка підключення атрибут CREATEROLE та право видавати членство в групі detective, наприклад: " +
+                    "ALTER ROLE … CREATEROLE; GRANT detective TO … WITH ADMIN OPTION; (підставте ім’я ролі з Username у рядку підключення).",
                     ex);
             }
         }
@@ -476,10 +486,6 @@ END $$;
     private static string QuotePgIdent(string name) =>
         "\"" + name.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
-    /// <summary>
-    /// PostgreSQL does not accept bind parameters in CREATE ROLE PASSWORD; Npgsql would send $1 and the
-    /// server returns 42601 "syntax error at or near $1". Use a dollar-quoted literal instead.
-    /// </summary>
     private static string DollarQuoteForPg(string value)
     {
         for (var i = 0; ; i++)
@@ -562,7 +568,6 @@ END $$;
         context.Detectives.Remove(detectiveEntity);
         await context.SaveChangesAsync();
 
-        // PostgreSQL: DROP ROLE detective_ivanov;
     }
 
     public async Task<(Case, Detective)> AssignDetectiveAsync(int caseId, int detectiveId)
@@ -590,20 +595,20 @@ END $$;
 
     #endregion
 
-    #region Evidence
+    #region Докази
 
     public async Task<Evidence?> GetEvidenceAsync(int evidenceId) =>
-        await context.Evidences
+        await EvidencesVisibleToAdmin
             .Include(e => e.CreatedByDetective)
             .FirstOrDefaultAsync(e => e.Id == evidenceId);
 
     public async Task<List<Evidence>> GetEvidencesAsync() =>
-        await context.Evidences.ToListAsync();
+        await EvidencesVisibleToAdmin.ToListAsync();
 
     public async Task<Evidence> CreateEvidenceAsync(CreateEvidenceDto dto)
     {
         var evidenceEntity = mapper.Map<Evidence>(dto);
-        evidenceEntity.ApprovalStatus = ApprovalStatus.Draft;
+        evidenceEntity.ApprovalStatus = ApprovalStatus.Approved;
         context.Evidences.Add(evidenceEntity);
         await context.SaveChangesAsync();
         return evidenceEntity;
@@ -611,7 +616,7 @@ END $$;
 
     public async Task<PagedResult<Evidence>> GetEvidencesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Evidences.AsQueryable();
+        var query = EvidencesVisibleToAdmin;
         var allItems = await query.ToListAsync();
 
         var totalCount = allItems.Count;
@@ -632,7 +637,7 @@ END $$;
 
     public async Task<PagedResult<Evidence>> SearchEvidencesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Evidences.AsQueryable();
+        var query = EvidencesVisibleToAdmin;
         var allItems = await query.ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -665,24 +670,33 @@ END $$;
     }
 
     public async Task<List<Evidence>> GetEvidencesFromCaseAsync(int caseId) =>
-        await context.CaseEvidences.Where(ce => ce.CaseId == caseId).Select(ce => ce.Evidence).ToListAsync();
+        await context.CaseEvidences
+            .Where(ce => ce.CaseId == caseId)
+            .Select(ce => ce.Evidence)
+            .Where(e => e.ApprovalStatus != ApprovalStatus.Draft)
+            .ToListAsync();
 
-    public async Task<List<Case>> GetCasesByEvidenceIdAsync(int evidenceId) =>
-        await context.Cases
+    public async Task<List<Case>> GetCasesByEvidenceIdAsync(int evidenceId)
+    {
+        if (!await EvidencesVisibleToAdmin.AnyAsync(e => e.Id == evidenceId))
+            return [];
+
+        return await context.Cases
             .Include(c => c.CaseType)
             .Include(c => c.Client)
             .Include(c => c.Detective)
             .Where(c => context.CaseEvidences.Any(ce => ce.CaseId == c.Id && ce.EvidenceId == evidenceId))
             .ToListAsync();
+    }
 
     public async Task<List<Evidence>> GetPendingEvidencesAsync() =>
-        await context.Evidences
+        await EvidencesVisibleToAdmin
             .Where(e => e.ApprovalStatus == ApprovalStatus.Pending)
             .ToListAsync();
 
     public async Task<Evidence> ApproveEvidenceAsync(int evidenceId)
     {
-        var evidence = await context.Evidences.FindAsync(evidenceId)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
         evidence.ApprovalStatus = ApprovalStatus.Approved;
@@ -692,7 +706,7 @@ END $$;
 
     public async Task<Evidence> RejectEvidenceAsync(int evidenceId)
     {
-        var evidence = await context.Evidences.FindAsync(evidenceId)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
         evidence.ApprovalStatus = ApprovalStatus.Declined;
@@ -702,7 +716,7 @@ END $$;
 
     public async Task<Evidence> UpdateEvidenceAsync(int id, UpdateEvidenceDto dto)
     {
-        var evidence = await context.Evidences.FindAsync(id)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == id)
                       ?? throw new EntityNotFoundException("Evidence", id);
 
         mapper.Map(dto, evidence);
@@ -713,7 +727,7 @@ END $$;
 
     public async Task<Evidence> SubmitEvidenceAsync(int evidenceId)
     {
-        var evidence = await context.Evidences.FindAsync(evidenceId)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
         evidence.ApprovalStatus = ApprovalStatus.Pending;
@@ -723,7 +737,7 @@ END $$;
 
     public async Task DeleteEvidenceAsync(int evidenceId)
     {
-        var evidence = await context.Evidences.FindAsync(evidenceId)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
         context.CaseEvidences.RemoveRange(
@@ -734,7 +748,7 @@ END $$;
 
     public async Task SetEvidenceStatusAsync(int evidenceId, ApprovalStatus status)
     {
-        var evidence = await context.Evidences.FindAsync(evidenceId)
+        var evidence = await EvidencesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == evidenceId)
                      ?? throw new EntityNotFoundException("Evidence", evidenceId);
 
         evidence.ApprovalStatus = status;
@@ -743,19 +757,19 @@ END $$;
 
     #endregion
 
-    #region Suspect
+    #region Підозрювані
 
     public async Task<Suspect?> GetSuspectAsync(int suspectId) =>
-        await context.Suspects
+        await SuspectsVisibleToAdmin
             .Include(s => s.CreatedByDetective)
             .FirstOrDefaultAsync(s => s.Id == suspectId);
 
     public async Task<List<Suspect>> GetSuspectsAsync() =>
-        await context.Suspects.ToListAsync();
+        await SuspectsVisibleToAdmin.ToListAsync();
 
     public async Task<PagedResult<Suspect>> GetSuspectsPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Suspects.AsQueryable();
+        var query = SuspectsVisibleToAdmin;
         var allItems = await query.ToListAsync();
 
         var totalCount = allItems.Count;
@@ -776,7 +790,7 @@ END $$;
 
     public async Task<PagedResult<Suspect>> SearchSuspectsPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Suspects.AsQueryable();
+        var query = SuspectsVisibleToAdmin;
         var allItems = await query.ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -812,15 +826,24 @@ END $$;
     }
 
     public async Task<List<Suspect>> GetSuspectsFromCaseAsync(int caseId) =>
-        await context.CaseSuspects.Where(cs => cs.CaseId == caseId).Select(cs => cs.Suspect).ToListAsync();
+        await context.CaseSuspects
+            .Where(cs => cs.CaseId == caseId)
+            .Select(cs => cs.Suspect)
+            .Where(s => s.ApprovalStatus != ApprovalStatus.Draft)
+            .ToListAsync();
 
-    public async Task<List<Case>> GetCasesBySuspectIdAsync(int suspectId) =>
-        await context.Cases
+    public async Task<List<Case>> GetCasesBySuspectIdAsync(int suspectId)
+    {
+        if (!await SuspectsVisibleToAdmin.AnyAsync(s => s.Id == suspectId))
+            return [];
+
+        return await context.Cases
             .Include(c => c.CaseType)
             .Include(c => c.Client)
             .Include(c => c.Detective)
             .Where(c => context.CaseSuspects.Any(cs => cs.CaseId == c.Id && cs.SuspectId == suspectId))
             .ToListAsync();
+    }
 
     public async Task<List<Case>> GetCasesByCaseTypeIdAsync(int caseTypeId) =>
         await context.Cases
@@ -832,13 +855,13 @@ END $$;
             .ToListAsync();
 
     public async Task<List<Suspect>> GetPendingSuspectsAsync() =>
-        await context.Suspects
+        await SuspectsVisibleToAdmin
             .Where(s => s.ApprovalStatus == ApprovalStatus.Pending)
             .ToListAsync();
 
     public async Task<Suspect> ApproveSuspectAsync(int suspectId)
     {
-        var suspect = await context.Suspects.FindAsync(suspectId)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
         suspect.ApprovalStatus = ApprovalStatus.Approved;
@@ -848,7 +871,7 @@ END $$;
 
     public async Task<Suspect> RejectSuspectAsync(int suspectId)
     {
-        var suspect = await context.Suspects.FindAsync(suspectId)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
         suspect.ApprovalStatus = ApprovalStatus.Declined;
@@ -858,7 +881,7 @@ END $$;
 
     public async Task<Suspect> UpdateSuspectAsync(int id, UpdateSuspectDto dto)
     {
-        var suspect = await context.Suspects.FindAsync(id)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == id)
                      ?? throw new EntityNotFoundException("Suspect", id);
 
         mapper.Map(dto, suspect);
@@ -869,7 +892,7 @@ END $$;
 
     public async Task<Suspect> SubmitSuspectAsync(int suspectId)
     {
-        var suspect = await context.Suspects.FindAsync(suspectId)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
         suspect.ApprovalStatus = ApprovalStatus.Pending;
@@ -879,7 +902,7 @@ END $$;
 
     public async Task DeleteSuspectAsync(int suspectId)
     {
-        var suspect = await context.Suspects.FindAsync(suspectId)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
         context.CaseSuspects.RemoveRange(
@@ -890,7 +913,7 @@ END $$;
 
     public async Task SetSuspectStatusAsync(int suspectId, ApprovalStatus status)
     {
-        var suspect = await context.Suspects.FindAsync(suspectId)
+        var suspect = await SuspectsVisibleToAdmin.FirstOrDefaultAsync(s => s.Id == suspectId)
                      ?? throw new EntityNotFoundException("Suspect", suspectId);
 
         suspect.ApprovalStatus = status;
@@ -899,21 +922,19 @@ END $$;
 
     #endregion
 
-    #region Expense
+    #region Витрати
 
     public async Task<Expense?> GetExpenseAsync(int expenseId) =>
-        await context.Expenses
+        await ExpensesVisibleToAdmin
             .Include(e => e.CreatedByDetective)
             .FirstOrDefaultAsync(e => e.Id == expenseId);
 
     public async Task<List<Expense>> GetExpensesAsync() =>
-        await context.Expenses.ToListAsync();
+        await ExpensesVisibleToAdmin.ToListAsync();
 
     public async Task<PagedResult<Expense>> GetExpensesPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Expenses
-            .Include(e => e.Case)
-            .AsQueryable();
+        var query = ExpensesVisibleToAdmin.Include(e => e.Case);
         var allItems = await query.ToListAsync();
 
         var totalCount = allItems.Count;
@@ -934,9 +955,7 @@ END $$;
 
     public async Task<PagedResult<Expense>> SearchExpensesPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Expenses
-            .Include(e => e.Case)
-            .AsQueryable();
+        var query = ExpensesVisibleToAdmin.Include(e => e.Case);
         var allItems = await query.ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -969,14 +988,14 @@ END $$;
     }
 
     public async Task<List<Expense>> GetExpensesFromCaseAsync(int caseId) =>
-        await context.Expenses.Where(e => e.CaseId == caseId).ToListAsync();
+        await ExpensesVisibleToAdmin.Where(e => e.CaseId == caseId).ToListAsync();
 
     public async Task<List<Expense>> GetPendingExpensesAsync() =>
-        await context.Expenses.Where(e => e.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
+        await ExpensesVisibleToAdmin.Where(e => e.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
 
     public async Task<Expense> ApproveExpenseAsync(int expenseId)
     {
-        var expense = await context.Expenses.FindAsync(expenseId)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
         
         expense.ApprovalStatus = ApprovalStatus.Approved;
@@ -987,7 +1006,7 @@ END $$;
 
     public async Task<Expense> RejectExpenseAsync(int expenseId)
     {
-        var expense = await context.Expenses.FindAsync(expenseId)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
 
         expense.ApprovalStatus = ApprovalStatus.Declined;
@@ -998,7 +1017,7 @@ END $$;
 
     public async Task<Expense> UpdateExpenseAsync(int id, UpdateExpenseDto dto)
     {
-        var expense = await context.Expenses.FindAsync(id)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == id)
                      ?? throw new EntityNotFoundException("Expense", id);
 
         mapper.Map(dto, expense);
@@ -1009,7 +1028,7 @@ END $$;
 
     public async Task<Expense> SubmitExpenseAsync(int expenseId)
     {
-        var expense = await context.Expenses.FindAsync(expenseId)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
 
         expense.ApprovalStatus = ApprovalStatus.Pending;
@@ -1019,7 +1038,7 @@ END $$;
 
     public async Task DeleteExpenseAsync(int expenseId)
     {
-        var expense = await context.Expenses.FindAsync(expenseId)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
 
         context.Expenses.Remove(expense);
@@ -1028,7 +1047,7 @@ END $$;
 
     public async Task SetExpenseStatusAsync(int expenseId, ApprovalStatus status)
     {
-        var expense = await context.Expenses.FindAsync(expenseId)
+        var expense = await ExpensesVisibleToAdmin.FirstOrDefaultAsync(e => e.Id == expenseId)
                      ?? throw new EntityNotFoundException("Expense", expenseId);
 
         expense.ApprovalStatus = status;
@@ -1037,21 +1056,20 @@ END $$;
 
     #endregion
 
-    #region Report
+    #region Звіти
 
     public async Task<Report?> GetReportAsync(int reportId) =>
-        await context.Reports
+        await ReportsVisibleToAdmin
             .Include(r => r.CreatedByDetective)
+            .Include(r => r.Case)
             .FirstOrDefaultAsync(r => r.Id == reportId);
 
     public async Task<List<Report>> GetReportsAsync() =>
-        await context.Reports.ToListAsync();
+        await ReportsVisibleToAdmin.ToListAsync();
 
     public async Task<PagedResult<Report>> GetReportsPagedAsync(int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Reports
-            .Include(r => r.Case)
-            .AsQueryable();
+        var query = ReportsVisibleToAdmin.Include(r => r.Case);
         var allItems = await query.ToListAsync();
 
         var totalCount = allItems.Count;
@@ -1072,9 +1090,7 @@ END $$;
 
     public async Task<PagedResult<Report>> SearchReportsPagedAsync(string? searchTerm, int pageNumber = 1, int pageSize = 15)
     {
-        var query = context.Reports
-            .Include(r => r.Case)
-            .AsQueryable();
+        var query = ReportsVisibleToAdmin.Include(r => r.Case);
         var allItems = await query.ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -1107,14 +1123,14 @@ END $$;
     }
 
     public async Task<List<Report>> GetReportsFromCaseAsync(int caseId) =>
-        await context.Reports.Where(r => r.CaseId == caseId).ToListAsync();
+        await ReportsVisibleToAdmin.Where(r => r.CaseId == caseId).ToListAsync();
 
     public async Task<List<Report>> GetPendingReportsAsync() =>
-        await context.Reports.Where(r => r.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
+        await ReportsVisibleToAdmin.Where(r => r.ApprovalStatus == ApprovalStatus.Pending).ToListAsync();
 
     public async Task<Report> ApproveReportAsync(int reportId)
     {
-        var report = await context.Reports.FindAsync(reportId)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
         
         report.ApprovalStatus = ApprovalStatus.Approved;
@@ -1125,7 +1141,7 @@ END $$;
 
     public async Task<Report> RejectReportAsync(int reportId)
     {
-        var report = await context.Reports.FindAsync(reportId)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
 
         report.ApprovalStatus = ApprovalStatus.Declined;
@@ -1136,7 +1152,7 @@ END $$;
 
     public async Task<Report> UpdateReportAsync(int id, UpdateReportDto dto)
     {
-        var report = await context.Reports.FindAsync(id)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == id)
                     ?? throw new EntityNotFoundException("Report", id);
 
         mapper.Map(dto, report);
@@ -1147,7 +1163,7 @@ END $$;
 
     public async Task<Report> SubmitReportAsync(int reportId)
     {
-        var report = await context.Reports.FindAsync(reportId)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
 
         report.ApprovalStatus = ApprovalStatus.Pending;
@@ -1157,7 +1173,7 @@ END $$;
 
     public async Task DeleteReportAsync(int reportId)
     {
-        var report = await context.Reports.FindAsync(reportId)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
 
         context.Reports.Remove(report);
@@ -1166,7 +1182,7 @@ END $$;
 
     public async Task SetReportStatusAsync(int reportId, ApprovalStatus status)
     {
-        var report = await context.Reports.FindAsync(reportId)
+        var report = await ReportsVisibleToAdmin.FirstOrDefaultAsync(r => r.Id == reportId)
                     ?? throw new EntityNotFoundException("Report", reportId);
 
         report.ApprovalStatus = status;
@@ -1175,7 +1191,7 @@ END $$;
 
     #endregion
 
-    #region CaseType
+    #region Типи справ
 
     public async Task<CaseType?> GetCaseTypeAsync(int caseTypeId) =>
         await context.CaseTypes.FindAsync(caseTypeId);

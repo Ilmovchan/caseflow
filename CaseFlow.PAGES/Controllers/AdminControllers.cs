@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Controllers;
 
-// ---------------- CASE ----------------
 [ApiController]
 [Route("api/admin/case")]
 [Produces("application/json")]
@@ -77,7 +76,6 @@ public class AdminCaseController(AdminService service) : ControllerBase
     }
 }
 
-// ---------------- CLIENT ----------------
 [ApiController]
 [Route("api/admin/client")]
 [Produces("application/json")]
@@ -128,7 +126,6 @@ public class AdminClientController(AdminService service) : ControllerBase
     }
 }
 
-// ---------------- DETECTIVE ----------------
 [ApiController]
 [Route("api/admin/detective")]
 [Produces("application/json")]
@@ -183,7 +180,6 @@ public class AdminDetectiveController(AdminService service) : ControllerBase
     }
 }
 
-// ---------------- EVIDENCE ----------------
 [ApiController]
 [Route("api/admin/evidence")]
 [Produces("application/json")]
@@ -249,7 +245,6 @@ public class AdminEvidenceController(AdminService service, IMapper mapper) : Con
 
 }
 
-// ---------------- SUSPECT ----------------
 [ApiController]
 [Route("api/admin/suspect")]
 [Produces("application/json")]
@@ -315,7 +310,6 @@ public class AdminSuspectController(AdminService service, IMapper mapper) : Cont
 
 }
 
-// ---------------- EXPENSE ----------------
 [ApiController]
 [Route("api/admin/expense")]
 [Produces("application/json")]
@@ -376,7 +370,6 @@ public class AdminExpenseController(AdminService service) : ControllerBase
     }
 }
 
-// ---------------- REPORT ----------------
 [ApiController]
 [Route("api/admin/report")]
 [Produces("application/json")]
@@ -441,7 +434,6 @@ public class AdminReportController(AdminService service, IMapper mapper) : Contr
     }
 }
 
-// ---------------- CASE TYPE ----------------
 [ApiController]
 [Route("api/admin/casetype")]
 [Produces("application/json")]

@@ -4,7 +4,7 @@
     ViewData["Title"] = "Панель адміністратора";
 }
 
-<!-- Hero Header -->
+
 <div class="admin-hero-section mb-5 text-center position-relative">
     <div class="floating-bg"></div>
 
@@ -17,10 +17,10 @@
 </div>
 
 
-<!-- Admin Dashboard -->
+
 <div class="admin-dashboard">
 
-    <!-- Section 1: Клієнти і детективи -->
+    
     <div class="dashboard-section mb-5">
         <h2 class="section-title mb-4">Основне управління</h2>
         <div class="row g-3">
@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    <!-- Section 2: Справи, Докази, Підозрювані, Витрати, Звіти -->
+    
     <div class="dashboard-section mb-5">
         <h2 class="section-title mb-4">Робота з матеріалами справ</h2>
         <div class="row g-3">
@@ -145,7 +145,7 @@
         </div>
     </div>
 
-    <!-- Section 3: Типи справ -->
+    
     <div class="dashboard-section">
         <h2 class="section-title mb-4">Налаштування системи</h2>
         <div class="row justify-content-start">
@@ -157,6 +157,24 @@
                         <p class="card-description">Налаштування типів справ і тарифів</p>
                         <a asp-page="CaseTypes/Index" class="card-action">
                             <span>Керувати</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section mt-5 mb-0">
+        <h2 class="section-title mb-4">Спеціальні виборки</h2>
+        <div class="row g-3 justify-content-start">
+            <div class="col-lg-6 col-md-6">
+                <div class="admin-panel-card compact">
+                    <div class="card-icon"><i class="fas fa-database"></i></div>
+                    <div class="card-content">
+                        <h3 class="card-title">Звіти та аналітика</h3>
+                        <a asp-page="SpecialQueries/Index" class="card-action">
+                            <span>Відкрити</span>
                             <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>

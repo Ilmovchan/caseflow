@@ -1,0 +1,114 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Suspects.EditModel
+@{
+    ViewData["Title"] = "Редагувати підозрюваного";
+}
+
+<h2>Редагувати підозрюваного</h2>
+<p class="text-muted small mb-3">
+    Після збереження статус знову стане чернеткою; далі можна надіслати запис на перевірку зі списку підозрюваних.
+</p>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach (var modelState in ViewData.ModelState.Values)
+        {
+            @foreach (var error in modelState.Errors)
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label">Прізвище</label>
+                <input asp-for="Input.LastName" class="form-control" placeholder="Тільки українські букви" />
+                <span asp-validation-for="Input.LastName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label">Ім'я</label>
+                <input asp-for="Input.FirstName" class="form-control" placeholder="Тільки українські букви" />
+                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.FatherName" class="form-label">По батькові</label>
+                <input asp-for="Input.FatherName" class="form-control" placeholder="Тільки українські букви" />
+                <span asp-validation-for="Input.FatherName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Nickname" class="form-label">Псевдонім</label>
+                <input asp-for="Input.Nickname" class="form-control" />
+                <span asp-validation-for="Input.Nickname" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhoneNumber" class="form-label">Телефон</label>
+                <input asp-for="Input.PhoneNumber" class="form-control" placeholder="+380XXXXXXXXX (наприклад, +380991234567)" />
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.DateOfBirth" class="form-label">Дата народження</label>
+                <input asp-for="Input.DateOfBirth" class="form-control" type="date" max="@DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd")" />
+                <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Region" class="form-label">Регіон</label>
+                <input asp-for="Input.Region" class="form-control" placeholder="Тільки українські букви" />
+                <span asp-validation-for="Input.Region" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.City" class="form-label">Місто</label>
+                <input asp-for="Input.City" class="form-control" placeholder="Українські букви та дефіси (наприклад, Одеса)" />
+                <span asp-validation-for="Input.City" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Street" class="form-label">Вулиця</label>
+                <input asp-for="Input.Street" class="form-control" placeholder="Українські букви, пробіли та дефіси (наприклад, Дерибасівська)" />
+                <span asp-validation-for="Input.Street" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.BuildingNumber" class="form-label">Номер будинку</label>
+                <input asp-for="Input.BuildingNumber" class="form-control" placeholder="Тільки цифри та слеші (наприклад, 126/1)" />
+                <span asp-validation-for="Input.BuildingNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.ApartmentNumber" class="form-label">Номер квартири</label>
+                <input asp-for="Input.ApartmentNumber" class="form-control" type="number" />
+                <span asp-validation-for="Input.ApartmentNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Height" class="form-label">Зріст (см)</label>
+                <input asp-for="Input.Height" class="form-control" type="number" />
+                <span asp-validation-for="Input.Height" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Weight" class="form-label">Вага (кг)</label>
+                <input asp-for="Input.Weight" class="form-control" type="number" />
+                <span asp-validation-for="Input.Weight" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhysicalDescription" class="form-label">Фізичний опис</label>
+                <textarea asp-for="Input.PhysicalDescription" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.PhysicalDescription" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PriorConvictions" class="form-label">Попередні судимості</label>
+                <textarea asp-for="Input.PriorConvictions" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.PriorConvictions" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Зберегти</button>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Скасувати</a>
+    <a asp-page="Index" class="btn btn-link">До списку</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />

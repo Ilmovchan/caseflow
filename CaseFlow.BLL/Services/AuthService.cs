@@ -1,11 +1,12 @@
 using CaseFlow.BLL.Dto.Auth;
 using CaseFlow.DAL.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace CaseFlow.BLL.Services;
 
-public class AuthService(IConfiguration configuration)
+public class AuthService(IConfiguration configuration, ILogger<AuthService> logger)
 {
     public async Task<AuthResultDto> LoginAsync(LoginDto loginDto)
     {
@@ -18,8 +19,6 @@ public class AuthService(IConfiguration configuration)
             };
         }
 
-        // Template: Host/Port/Database (and pool defaults). Username/Password are replaced with
-        // the login form values so PostgreSQL authenticates that user (e.g. role "admin" only here).
         var baseConnectionString = NpgsqlConnectionStringHelper.ApplyEnvironmentOverrides(
             configuration.GetConnectionString("DetectiveAgencyDb"));
         if (string.IsNullOrWhiteSpace(baseConnectionString))
@@ -41,6 +40,14 @@ public class AuthService(IConfiguration configuration)
             };
         }
 
+        var csbInfo = new NpgsqlConnectionStringBuilder(baseConnectionString);
+        logger.LogInformation(
+            "Успішний вхід у PostgreSQL: pg_user={PgUser}, роль_застосунку={AppRole}, хост={Host}, база={Database}. Перевірено pg_has_role для admin/detective.",
+            loginDto.Username.Trim(),
+            roleFromPostgres,
+            csbInfo.Host ?? "(default)",
+            csbInfo.Database ?? "(default)");
+
         return new AuthResultDto
         {
             Success = true,
@@ -49,7 +56,6 @@ public class AuthService(IConfiguration configuration)
             {
                 Id = 0,
                 Username = loginDto.Username.Trim(),
-                // For detective flow, we use username as identity/email unless mapped elsewhere.
                 Email = loginDto.Username.Trim(),
                 Role = roleFromPostgres,
                 CreatedAt = DateTime.UtcNow,
@@ -61,7 +67,6 @@ public class AuthService(IConfiguration configuration)
 
     public async Task CreateDefaultUsersAsync()
     {
-        // Auth now relies on PostgreSQL users/roles, not app-level default users table.
         await Task.CompletedTask;
     }
 

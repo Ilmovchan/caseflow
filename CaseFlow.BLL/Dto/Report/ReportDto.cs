@@ -13,6 +13,5 @@ public class ReportDto
     
     public ApprovalStatus? ApprovalStatus { get; set; }
     
-    // Human-readable name for the case
     public string CaseTitle { get; set; } = null!;
 }

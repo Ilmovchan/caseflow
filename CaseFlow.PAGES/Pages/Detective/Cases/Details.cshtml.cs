@@ -26,8 +26,6 @@ public class DetailsModel(DetectiveService detectiveService, IMapper mapper) : P
 
     public List<EvidenceCaseDto> LinkableEvidences { get; set; } = new();
     public List<SuspectDto> LinkableSuspects { get; set; } = new();
-    public List<ReportDto> AssignableReports { get; set; } = new();
-    public List<ExpenseDto> AssignableExpenses { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -52,9 +50,6 @@ public class DetailsModel(DetectiveService detectiveService, IMapper mapper) : P
         var linkableS = await _detectiveService.GetSuspectsLinkableToCaseAsync(id, identity);
         var sIds = Suspects.Select(x => x.Id).ToHashSet();
         LinkableSuspects = linkableS.Where(x => !sIds.Contains(x.Id)).ToList();
-
-        AssignableReports = await _detectiveService.GetReportsAssignableToCaseAsync(id, identity);
-        AssignableExpenses = await _detectiveService.GetExpensesAssignableToCaseAsync(id, identity);
 
         return Page();
     }
@@ -92,24 +87,6 @@ public class DetailsModel(DetectiveService detectiveService, IMapper mapper) : P
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
         await _detectiveService.UnlinkSuspectFromCaseAsync(suspectId, id, identity);
-        return RedirectToPage(new { id });
-    }
-
-    public async Task<IActionResult> OnPostAssignReportAsync(int id, int reportId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        await _detectiveService.AssignReportToCaseAsync(reportId, id, identity);
-        return RedirectToPage(new { id });
-    }
-
-    public async Task<IActionResult> OnPostAssignExpenseAsync(int id, int expenseId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        await _detectiveService.AssignExpenseToCaseAsync(expenseId, id, identity);
         return RedirectToPage(new { id });
     }
 }

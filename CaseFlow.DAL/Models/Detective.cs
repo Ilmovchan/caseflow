@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using CaseFlow.DAL.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -66,7 +66,7 @@ public class Detective
     [Column("status")] 
     public DetectiveStatus Status { get; set; } = DetectiveStatus.Active;
 
-    /// <summary>PostgreSQL login role name when an app login was created for this detective.</summary>
+    /// <summary>Ім’я ролі LOGIN у PostgreSQL для цього детектива.</summary>
     [Column("postgres_login")]
     [MaxLength(100)]
     public string? PostgresLogin { get; set; }

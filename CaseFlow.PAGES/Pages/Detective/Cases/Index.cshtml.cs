@@ -33,7 +33,6 @@ public class IndexModel(DetectiveService detectiveService, IMapper mapper) : Pag
             ? new List<Case>()
             : await _detectiveService.GetCasesByDetectiveEmailAsync(detectiveIdentity);
 
-        // Map to DTO
         var caseDtos = _mapper.Map<List<CaseDto>>(allCases);
 
         if (!string.IsNullOrWhiteSpace(SearchTerm))

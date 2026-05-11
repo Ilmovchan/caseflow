@@ -1,0 +1,386 @@
+@page
+@model CaseFlow.PAGES.Pages.Admin.SpecialQueries.IndexModel
+@using CaseFlow.DAL.Enums
+@{
+    ViewData["Title"] = "Спеціальні виборки";
+    var y = DateTime.UtcNow.Year;
+}
+
+<div class="accordion mt-2" id="sq-acc">
+
+    <div class="accordion-item border-info">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#listing-a">Подання PostgreSQL</button>
+        </h2>
+        <div id="listing-a" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body small">
+                <h6 class="text-info">detective_ranking</h6>
+                <p class="text-muted mb-2">Рейтинг детективів за поточний рік: частка закритих справ, кількість прострочених, середня вартість справ, кількість доказів і підозрюваних.</p>
+                <form method="post" asp-page-handler="SqlDetectiveRanking" class="mb-3"><button type="submit" class="btn btn-sm btn-outline-primary">Показати</button></form>
+                @if (Model.SqlDetectiveRankingRows != null)
+                {
+                    <div class="table-responsive mb-4"><table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>ПІБ</th><th>% закритих</th><th>Простроч.</th><th>Сер. вартість</th><th>Доказів</th><th>Підозр.</th></tr></thead><tbody>
+                    @foreach (var r in Model.SqlDetectiveRankingRows)
+                    {
+                        <tr><td>@r.DetectiveId</td><td>@r.DetectiveName</td><td>@(r.ClosedCasePercentage?.ToString("N2") ?? "—")</td><td>@r.OverdueCasesCount</td><td>@(r.AverageCaseCost?.ToString("N2") ?? "—")</td><td>@r.TotalEvidenceCount</td><td>@r.TotalSuspectsCount</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+
+                <h6 class="text-info">first_time_clients</h6>
+                <p class="text-muted mb-2">Клієнти, у яких дата першої справи потрапляє в поточний календарний рік.</p>
+                <form method="post" asp-page-handler="SqlFirstTimeClientsView" class="mb-2"><button type="submit" class="btn btn-sm btn-outline-primary">Показати</button></form>
+                @if (Model.SqlFirstTimeClientsViewRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>Ім’я</th><th>Прізвище</th><th>Перша справа</th></tr></thead><tbody>
+                    @foreach (var r in Model.SqlFirstTimeClientsViewRows)
+                    {
+                        <tr><td>@r.ClientId</td><td>@r.FirstName</td><td>@r.LastName</td><td>@r.FirstCaseDate</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.SqlErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-2 mb-0 small">@Model.SqlErrorMessage</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a17">A17 — Звіти по справі</button>
+        </h2>
+        <div id="a17" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="ReportsCase" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID справи</label><input type="number" name="caseId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.ReportsCaseRows != null)
+                {
+                    @if (Model.ReportsCaseRows.Count == 0) { <p class="text-muted small mb-0">Немає звітів.</p> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>Справа</th><th>Детектив</th><th>Дата</th><th>Текст</th></tr></thead><tbody>
+                        @foreach (var r in Model.ReportsCaseRows)
+                        {
+                            <tr><td><a asp-page="/Admin/Reports/Details" asp-route-id="@r.ReportId">@r.ReportId</a></td><td>@r.CaseId</td><td>@r.DetectivePib</td><td>@r.ReportDate</td><td>@r.Summary</td></tr>
+                        }
+                        </tbody></table></div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a18">A18 — Звіт за ID</button>
+        </h2>
+        <div id="a18" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="ReportSingle" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID звіту</label><input type="number" name="reportId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.SingleReport != null)
+                {
+                    var r = Model.SingleReport;
+                    <dl class="row small mb-0"><dt class="col-sm-3">Справа</dt><dd class="col-sm-9">@r.CaseId — @r.CaseTitle</dd><dt class="col-sm-3">Дата</dt><dd class="col-sm-9">@r.ReportDate</dd><dt class="col-sm-3">Резюме</dt><dd class="col-sm-9">@r.Summary</dd><dt class="col-sm-3">Коментарі</dt><dd class="col-sm-9">@(r.Comments ?? "—")</dd></dl>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a19">A19 — Справи за статусом</button>
+        </h2>
+        <div id="a19" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CasesStatus" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><select name="statusFilter" asp-items="Html.GetEnumSelectList<CaseStatus>()" class="form-select form-select-sm" required></select></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.CasesStatusRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.CasesStatusRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a20">A20 — Незакриті, найближчі до дедлайну</button>
+        </h2>
+        <div id="a20" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="NearestDeadline" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Показати</button></form>
+                @if (Model.NearestDeadlineRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.NearestDeadlineRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a21">A21 — Відкриті, найближчі до дедлайну</button>
+        </h2>
+        <div id="a21" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="OpenNearestDeadline" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Показати</button></form>
+                @if (Model.OpenNearestDeadlineRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.OpenNearestDeadlineRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a22">A22 — Справи клієнта</button>
+        </h2>
+        <div id="a22" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CasesClient" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID клієнта</label><input type="number" name="clientId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.CasesClientRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.CasesClientRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a23">A23 — Клієнти за датою реєстрації</button>
+        </h2>
+        <div id="a23" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="ClientsReg" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">Від</label><input type="date" name="regFrom" class="form-control form-control-sm" required /></div>
+                    <div class="col-auto"><label class="form-label mb-0 small">До</label><input type="date" name="regTo" class="form-control form-control-sm" required /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.ClientsRegRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>ПІБ</th><th>Реєстрація</th></tr></thead><tbody>
+                    @foreach (var c in Model.ClientsRegRows)
+                    {
+                        <tr class="clickable-row" data-href="@Url.Page("/Admin/Clients/Details", new { id = c.Id })"><td>@c.Id</td><td>@c.LastName @c.FirstName</td><td>@c.RegistrationDate</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a24">A24 — Навантаження детектива</button>
+        </h2>
+        <div id="a24" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="Workload" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID детектива</label><input type="number" name="detectiveId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.WorkloadRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.WorkloadRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a25">A25 — Рейтинг детективів (закриті справи)</button>
+        </h2>
+        <div id="a25" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="RankingClosed" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Побудувати</button></form>
+                @if (Model.RankingClosedRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>#</th><th>ПІБ</th><th>Закрито</th><th>%</th><th>Сер. днів</th></tr></thead><tbody>
+                    @foreach (var r in Model.RankingClosedRows)
+                    {
+                        <tr><td>@r.Place</td><td>@r.DetectivePib</td><td>@r.ClosedCasesCount</td><td>@r.SuccessPercent</td><td>@(r.AvgCompletionDays?.ToString("F1") ?? "—")</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a26">A26 — Прострочені дедлайни</button>
+        </h2>
+        <div id="a26" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="Overdue" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Показати</button></form>
+                @if (Model.OverdueRows != null) { @await Html.PartialAsync("_SqCaseTable", Model.OverdueRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a27">A27 — Незавершені справи по клієнтах</button>
+        </h2>
+        <div id="a27" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="ClientUnfinished" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Показати</button></form>
+                @if (Model.ClientUnfinishedRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Клієнт</th><th>Кількість</th></tr></thead><tbody>
+                    @foreach (var r in Model.ClientUnfinishedRows)
+                    {
+                        <tr><td>@r.ClientPib</td><td>@r.UnfinishedCount</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a28">A28 — Середня вартість справ детектива</button>
+        </h2>
+        <div id="a28" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="AvgCost" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID детектива</label><input type="number" name="detectiveIdCost" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Обчислити</button></div>
+                </form>
+                @if (Model.AvgCostValue.HasValue)
+                {
+                    <p class="small mb-0"><strong>@Model.AvgCostDetectivePib</strong>: @Model.AvgCostValue.Value.ToString("N2")</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a29">A29 — Зведений рейтинг детективів за рік</button>
+        </h2>
+        <div id="a29" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="YearRanking" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">Рік</label><input type="number" name="rankingYear" class="form-control form-control-sm" value="@y" min="2000" max="2100" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.YearRankingRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>ПІБ</th><th>% закритих</th><th>Незакритих</th><th>Сума вартості</th><th>Доказів</th><th>Підозрюваних</th></tr></thead><tbody>
+                    @foreach (var r in Model.YearRankingRows)
+                    {
+                        <tr><td>@r.DetectivePib</td><td>@r.ClosedPercent</td><td>@r.OpenIncompleteCount</td><td>@r.TotalCasesValue</td><td>@r.EvidenceCount</td><td>@r.SuspectsCount</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a30">A30 — Клієнти «вперше» у році</button>
+        </h2>
+        <div id="a30" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="FirstTime" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">Рік</label><input type="number" name="firstTimeYear" class="form-control form-control-sm" value="@y" min="2000" max="2100" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.FirstTimeClientRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>ПІБ</th><th>Перша справа</th></tr></thead><tbody>
+                    @foreach (var r in Model.FirstTimeClientRows)
+                    {
+                        <tr><td>@r.ClientId</td><td>@r.ClientPib</td><td>@r.FirstCaseDate</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a31">A31 — Популярність типів справ</button>
+        </h2>
+        <div id="a31" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CaseTypePopularity" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Побудувати рейтинг</button></form>
+                @if (Model.CaseTypePopularityRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>#</th><th>Тип</th><th>Кількість</th></tr></thead><tbody>
+                    @foreach (var r in Model.CaseTypePopularityRows)
+                    {
+                        <tr><td>@r.Place</td><td>@r.CaseTypeName</td><td>@r.Count</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a32">A32 — Рейтинг клієнтів за незавершеними справами</button>
+        </h2>
+        <div id="a32" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="ClientUnfinishedRank" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Побудувати</button></form>
+                @if (Model.ClientUnfinishedRankRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>#</th><th>ID</th><th>ПІБ</th><th>Кількість</th></tr></thead><tbody>
+                    @foreach (var r in Model.ClientUnfinishedRankRows)
+                    {
+                        <tr><td>@r.Place</td><td>@r.ClientId</td><td>@r.ClientPib</td><td>@r.UnfinishedCount</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a33">A33 — Типи справ з найбільшою кількістю незавершених</button>
+        </h2>
+        <div id="a33" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CaseTypeUnfinishedRank" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Побудувати</button></form>
+                @if (Model.CaseTypeUnfinishedRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>#</th><th>Тип</th><th>Незавершених</th></tr></thead><tbody>
+                    @foreach (var r in Model.CaseTypeUnfinishedRows)
+                    {
+                        <tr><td>@r.Place</td><td>@r.CaseTypeName</td><td>@r.Count</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a34">A34 — Справи за кількістю витрат</button>
+        </h2>
+        <div id="a34" class="accordion-collapse collapse" data-bs-parent="#sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CaseExpenseRank" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Побудувати</button></form>
+                @if (Model.CaseExpenseRankRows != null)
+                {
+                    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>#</th><th>Справа</th><th>Клієнт</th><th>Детектив</th><th>Витрат</th></tr></thead><tbody>
+                    @foreach (var r in Model.CaseExpenseRankRows)
+                    {
+                        <tr class="clickable-row" data-href="@Url.Page("/Admin/Cases/Details", new { id = r.CaseId })"><td>@r.Place</td><td>@r.CaseTitle</td><td>@r.ClientPib</td><td>@r.DetectivePib</td><td>@r.ExpensesCount</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

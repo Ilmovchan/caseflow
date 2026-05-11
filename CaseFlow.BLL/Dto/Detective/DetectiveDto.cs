@@ -21,6 +21,5 @@ public class DetectiveDto
     public string? PersonalNotes { get; set; }
     public DetectiveStatus Status { get; set; }
     
-    // Computed property for full name
     public string FullName => $"{LastName} {FirstName}" + (FatherName != null ? $" {FatherName}" : "");
 }

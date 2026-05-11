@@ -109,6 +109,7 @@ public partial class DetectiveAgencyDbContext : DbContext
 
             entity.HasOne(d => d.Detective).WithMany(p => p.Cases)
                 .HasForeignKey(d => d.DetectiveId)
+                .IsRequired(false)
                 .HasConstraintName("FK_case_detective_id");
 
             entity.ToTable(t =>

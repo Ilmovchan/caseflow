@@ -1,4 +1,3 @@
-using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.Evidence;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
@@ -17,47 +16,33 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
     [BindProperty]
     public CreateEvidenceInputModel Input { get; set; } = new();
 
-    public List<CaseDto> Cases { get; set; } = new();
+    public Task OnGetAsync() => Task.CompletedTask;
 
-    public async Task OnGetAsync()
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        var cases = string.IsNullOrEmpty(identity)
-            ? []
-            : await _detectiveService.GetCasesByDetectiveEmailAsync(identity);
-        Cases = cases.Select(c => new CaseDto
-        {
-            Id = c.Id,
-            Title = c.Title,
-            ClientFullName = c.Client?.FirstName + " " + c.Client?.LastName ?? "Unknown",
-            CaseTypeName = c.CaseType?.Name ?? "Unknown"
-        }).ToList();
-    }
+    public Task<IActionResult> OnPostSubmitAsync() =>
+        CreateEvidenceInternalAsync(submitForApproval: true);
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostDraftAsync() =>
+        CreateEvidenceInternalAsync(submitForApproval: false);
+
+    private async Task<IActionResult> CreateEvidenceInternalAsync(bool submitForApproval)
     {
-        // Normalize to minute precision (drop seconds/milliseconds).
         var normalizedLocalDate = new DateTime(
-                Input.CollectionDate.Year,
-                Input.CollectionDate.Month,
-                Input.CollectionDate.Day,
-                Input.CollectionDate.Hour,
-                Input.CollectionDate.Minute,
-                0,
-                DateTimeKind.Unspecified
-            );
+            Input.CollectionDate.Year,
+            Input.CollectionDate.Month,
+            Input.CollectionDate.Day,
+            Input.CollectionDate.Hour,
+            Input.CollectionDate.Minute,
+            0,
+            DateTimeKind.Unspecified
+        );
 
-        // Validate against local time first (datetime-local is user local time, e.g. Kyiv).
         if (normalizedLocalDate > DateTime.Now)
         {
             ModelState.AddModelError(nameof(Input.CollectionDate), "Дата збору не може бути в майбутньому");
         }
 
         if (!ModelState.IsValid)
-        {
-            await OnGetAsync();
             return Page();
-        }
 
         try
         {
@@ -65,7 +50,6 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
             if (string.IsNullOrEmpty(identity))
                 return Unauthorized();
 
-            // Convert local datetime to UTC for PostgreSQL.
             var utcCollectionDate = normalizedLocalDate.Kind == DateTimeKind.Unspecified
                 ? DateTime.SpecifyKind(normalizedLocalDate, DateTimeKind.Local).ToUniversalTime()
                 : normalizedLocalDate.Kind == DateTimeKind.Local
@@ -82,13 +66,12 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 Purpose = Input.Purpose
             };
 
-            var created = await _detectiveService.CreateEvidenceAsync(Input.CaseId, dto, identity);
+            var created = await _detectiveService.CreateEvidenceAsync(dto, identity, submitForApproval);
             return RedirectToPage("Details", new { id = created.EvidenceId });
         }
         catch (EntityNotFoundException ex)
         {
-            ModelState.AddModelError(string.Empty, $"Справа не знайдена: {ex.Message}");
-            await OnGetAsync();
+            ModelState.AddModelError(string.Empty, $"Не вдалося створити доказ: {ex.Message}");
             return Page();
         }
         catch (Exception ex)
@@ -104,12 +87,11 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 {
                     ModelState.AddModelError(string.Empty, constraintViolation.UserFriendlyMessage);
                 }
-                await OnGetAsync();
+
                 return Page();
             }
 
             ModelState.AddModelError(string.Empty, "Помилка при створенні доказу. Спробуйте ще раз.");
-            await OnGetAsync();
             return Page();
         }
     }
@@ -117,7 +99,6 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
 public class CreateEvidenceInputModel
 {
-    public int CaseId { get; set; }
     public CaseFlow.DAL.Enums.EvidenceType Type { get; set; }
     public string Description { get; set; } = null!;
     public DateTime CollectionDate { get; set; } = new DateTime(
@@ -132,5 +113,3 @@ public class CreateEvidenceInputModel
     public string? Annotation { get; set; }
     public string? Purpose { get; set; }
 }
-
-

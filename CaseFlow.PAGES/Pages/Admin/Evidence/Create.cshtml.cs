@@ -19,7 +19,6 @@ public class CreateModel(AdminService adminService) : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        // Normalize to minute precision (drop seconds/milliseconds).
         var normalizedLocalDate = new DateTime(
                 Input.CollectionDate.Year,
                 Input.CollectionDate.Month,
@@ -30,7 +29,6 @@ public class CreateModel(AdminService adminService) : PageModel
                 DateTimeKind.Unspecified
             );
 
-        // Validate against local time first (datetime-local is user local time, e.g. Kyiv).
         if (normalizedLocalDate > DateTime.Now)
         {
             ModelState.AddModelError(nameof(Input.CollectionDate), "Дата збору не може бути в майбутньому");
@@ -41,7 +39,6 @@ public class CreateModel(AdminService adminService) : PageModel
 
         try
         {
-            // Convert local datetime to UTC for PostgreSQL.
             var utcCollectionDate = normalizedLocalDate.Kind == DateTimeKind.Unspecified
                 ? DateTime.SpecifyKind(normalizedLocalDate, DateTimeKind.Local).ToUniversalTime()
                 : normalizedLocalDate.Kind == DateTimeKind.Local

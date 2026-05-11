@@ -29,7 +29,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        // Get all evidence first
         List<CaseFlow.DAL.Models.Evidence> allEvidence;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -42,7 +41,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allEvidence = allResult.Items;
         }
 
-        // Admin sees all statuses, including Draft.
         var totalCount = allEvidence.Count;
         var items = allEvidence
             .OrderBy(e => e.Id)
@@ -60,7 +58,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 
         AllEvidence = PagedEvidence.Items;
 
-        // Get pending evidence for approval section
         var pendingEvidenceEntities = await _adminService.GetPendingEvidencesAsync();
         PendingEvidence = _mapper.Map<List<EvidenceDto>>(pendingEvidenceEntities);
     }
@@ -121,7 +118,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatusColor = "warning",
                 approvalStatus = "Pending",
                 message = "Доказ надіслано на перевірку!",
-                // keep response lightweight (frontend only needs status fields)
             });
         }
         catch (Exception ex)
@@ -182,8 +178,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         
         for (int i = 1; i <= 45; i++)
         {
-            var collectionDate = DateTime.Now.AddDays(-random.Next(1, 365)); // Last year
-            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
+            var collectionDate = DateTime.Now.AddDays(-random.Next(1, 365));            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
             
             sampleEvidence.Add(new EvidenceDto
             {

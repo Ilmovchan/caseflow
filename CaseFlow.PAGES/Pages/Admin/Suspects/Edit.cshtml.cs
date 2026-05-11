@@ -53,8 +53,7 @@ public class EditModel(AdminService adminService) : PageModel
         try
         {
             var updated = await _adminService.UpdateSuspectAsync(Id, Input);
-            // Set status to Draft after edit
-            await _adminService.SetSuspectStatusAsync(Id, ApprovalStatus.Draft);
+            await _adminService.SetSuspectStatusAsync(Id, ApprovalStatus.Pending);
             return RedirectToPage("Details", new { id = updated.Id });
         }
         catch (Exception ex)

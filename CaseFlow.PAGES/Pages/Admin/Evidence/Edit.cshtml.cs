@@ -45,7 +45,6 @@ public class EditModel(AdminService adminService) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        // Keep collection date precision at minutes only.
         if (Input.CollectionDate.HasValue)
         {
             var d = Input.CollectionDate.Value;
@@ -55,8 +54,7 @@ public class EditModel(AdminService adminService) : PageModel
         try
         {
             var updated = await _adminService.UpdateEvidenceAsync(Id, Input);
-            // Set status to Draft after edit
-            await _adminService.SetEvidenceStatusAsync(Id, ApprovalStatus.Draft);
+            await _adminService.SetEvidenceStatusAsync(Id, ApprovalStatus.Pending);
             return RedirectToPage("Details", new { id = updated.Id });
         }
         catch (Exception ex)

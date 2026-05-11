@@ -3,6 +3,7 @@ using CaseFlow.BLL.Dto.Evidence;
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Dto.Report;
 using CaseFlow.BLL.Dto.Suspect;
+using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
 using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CaseFlow.PAGES.Controllers;
 
-// ---------------- CASE ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -63,7 +63,6 @@ public class DetectiveCaseController(DetectiveService service) : ControllerBase
     }
 }
 
-// ---------------- CLIENT ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -94,7 +93,6 @@ public class DetectiveClientController(DetectiveService service) : ControllerBas
     }
 }
 
-// ---------------- EVIDENCE ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -170,16 +168,16 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
         return Ok(await service.GetPendingEvidencesAsync(identity));
     }
 
-    [HttpPost("case/{caseId:int}")]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create(int caseId, [FromBody] CreateEvidenceDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateEvidenceDto dto, [FromQuery] bool draft = false)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var identity = DetectiveIdentity.FromUser(User);
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
-        var created = await service.CreateEvidenceAsync(caseId, dto, identity);
+        var created = await service.CreateEvidenceAsync(dto, identity, submitForApproval: !draft);
         return CreatedAtAction(nameof(Get), new { id = created.EvidenceId }, created);
     }
 
@@ -225,7 +223,6 @@ public class DetectiveEvidenceController(DetectiveService service) : ControllerB
     }
 }
 
-// ---------------- SUSPECT ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -297,15 +294,24 @@ public class DetectiveSuspectController(DetectiveService service) : ControllerBa
         return Ok(await service.GetPendingSuspectsAsync(identity));
     }
 
-    [HttpPost("case/{caseId:int}")]
-    public async Task<IActionResult> Create(int caseId, [FromBody] CreateSuspectDto dto)
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateSuspectDto dto, [FromQuery] bool draft = false)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var identity = DetectiveIdentity.FromUser(User);
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
-        var created = await service.CreateSuspectAsync(caseId, dto, identity);
-        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+        try
+        {
+            var created = await service.CreateSuspectAsync(dto, identity, submitForApproval: !draft);
+            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+        }
+        catch (SuspectValidationException ex)
+        {
+            foreach (var (prop, msg) in ex.Errors)
+                ModelState.AddModelError(prop, msg);
+            return ValidationProblem(ModelState);
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -350,7 +356,6 @@ public class DetectiveSuspectController(DetectiveService service) : ControllerBa
     }
 }
 
-// ---------------- EXPENSE ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -386,25 +391,6 @@ public class DetectiveExpenseController(DetectiveService service) : ControllerBa
         return Ok(await service.GetExpensesFromCaseAsync(caseId, identity));
     }
 
-    [HttpGet("assignable/case/{caseId:int}")]
-    public async Task<IActionResult> GetAssignableForCase(int caseId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        return Ok(await service.GetExpensesAssignableToCaseAsync(caseId, identity));
-    }
-
-    [HttpPost("{expenseId:int}/assign-case/{caseId:int}")]
-    public async Task<IActionResult> AssignToCase(int expenseId, int caseId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        var updated = await service.AssignExpenseToCaseAsync(expenseId, caseId, identity);
-        return Ok(updated);
-    }
-
     [HttpGet("approved")]
     public async Task<IActionResult> GetApproved()
     {
@@ -433,13 +419,13 @@ public class DetectiveExpenseController(DetectiveService service) : ControllerBa
     }
 
     [HttpPost("case/{caseId:int}")]
-    public async Task<IActionResult> Create(int caseId, [FromBody] CreateExpenseDto dto)
+    public async Task<IActionResult> Create(int caseId, [FromBody] CreateExpenseDto dto, [FromQuery] bool draft = false)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var identity = DetectiveIdentity.FromUser(User);
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
-        var created = await service.CreateExpenseAsync(caseId, dto, identity);
+        var created = await service.CreateExpenseAsync(caseId, dto, identity, submitForApproval: !draft);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
@@ -465,7 +451,6 @@ public class DetectiveExpenseController(DetectiveService service) : ControllerBa
     }
 }
 
-// ---------------- REPORT ----------------
 [ApiController]
 [Route("api/detective/[controller]")]
 [Produces("application/json")]
@@ -501,25 +486,6 @@ public class DetectiveReportController(DetectiveService service) : ControllerBas
         return Ok(await service.GetReportsFromCaseAsync(caseId, identity));
     }
 
-    [HttpGet("assignable/case/{caseId:int}")]
-    public async Task<IActionResult> GetAssignableForCase(int caseId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        return Ok(await service.GetReportsAssignableToCaseAsync(caseId, identity));
-    }
-
-    [HttpPost("{reportId:int}/assign-case/{caseId:int}")]
-    public async Task<IActionResult> AssignToCase(int reportId, int caseId)
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        if (string.IsNullOrEmpty(identity))
-            return Unauthorized();
-        var updated = await service.AssignReportToCaseAsync(reportId, caseId, identity);
-        return Ok(updated);
-    }
-
     [HttpGet("approved")]
     public async Task<IActionResult> GetApproved()
     {
@@ -548,13 +514,13 @@ public class DetectiveReportController(DetectiveService service) : ControllerBas
     }
 
     [HttpPost("case/{caseId:int}")]
-    public async Task<IActionResult> Create(int caseId, [FromBody] CreateReportDto dto)
+    public async Task<IActionResult> Create(int caseId, [FromBody] CreateReportDto dto, [FromQuery] bool draft = false)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var identity = DetectiveIdentity.FromUser(User);
         if (string.IsNullOrEmpty(identity))
             return Unauthorized();
-        var created = await service.CreateReportAsync(caseId, dto, identity);
+        var created = await service.CreateReportAsync(caseId, dto, identity, submitForApproval: !draft);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 

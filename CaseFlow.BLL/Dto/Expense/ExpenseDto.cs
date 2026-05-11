@@ -13,6 +13,5 @@ public class ExpenseDto
     public string? Annotation { get; set; }
     public ApprovalStatus? ApprovalStatus { get; set; }
     
-    // Human-readable name for the case
     public string CaseTitle { get; set; } = null!;
 }

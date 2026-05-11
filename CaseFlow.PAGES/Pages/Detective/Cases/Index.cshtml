@@ -19,6 +19,8 @@
     </form>
 </div>
 
+<p class="text-muted small mb-3">Показано справи, де ви призначені виконавцем. Інші справи недоступні у цьому списку.</p>
+
 <table id="cases-table" class="table sortable-table paginated-table">
     <thead>
     <tr>
@@ -68,7 +70,7 @@
     </tbody>
 </table>
 
-<!-- Server-side Pagination -->
+
 @if (Model.PagedCases.TotalPages > 1)
 {
     <nav aria-label="Cases pagination" class="mt-3">

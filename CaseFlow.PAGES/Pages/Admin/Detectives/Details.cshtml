@@ -42,6 +42,7 @@
                 <th class="text-center">Термін</th>
                 <th class="text-center">Закриття</th>
                 <th class="text-center">Статус</th>
+                <th class="text-center text-nowrap">Дії</th>
             </tr>
             </thead>
             <tbody>
@@ -86,6 +87,16 @@
                                         : "Відкрито";
                         }
                         <span class="badge bg-@statusClass">@statusText</span>
+                    </td>
+                    <td class="text-center">
+                        <form method="post" asp-page-handler="UnlinkCase" asp-route-id="@Model.Detective.Id"
+                              class="d-inline" onclick="event.stopPropagation();">
+                            <input type="hidden" name="caseId" value="@c.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    title="Зняти призначення детектива з цієї справи">
+                                Відв’язати
+                            </button>
+                        </form>
                     </td>
                 </tr>
             }

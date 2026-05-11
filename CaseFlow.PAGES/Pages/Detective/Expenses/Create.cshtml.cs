@@ -2,7 +2,6 @@ using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
-using CaseFlow.DAL.Enums;
 using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +34,13 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
         }).ToList();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostSubmitAsync() =>
+        CreateExpenseInternalAsync(submitForApproval: true);
+
+    public Task<IActionResult> OnPostDraftAsync() =>
+        CreateExpenseInternalAsync(submitForApproval: false);
+
+    private async Task<IActionResult> CreateExpenseInternalAsync(bool submitForApproval)
     {
         if (!ModelState.IsValid)
         {
@@ -49,8 +54,6 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
             if (string.IsNullOrEmpty(identity))
                 return Unauthorized();
 
-            // Convert local datetime to UTC for PostgreSQL
-            // datetime-local inputs return DateTime with Kind=Unspecified
             var utcDateTime = Input.DateTime.Kind == DateTimeKind.Unspecified
                 ? DateTime.SpecifyKind(Input.DateTime, DateTimeKind.Local).ToUniversalTime()
                 : Input.DateTime.Kind == DateTimeKind.Local
@@ -65,7 +68,7 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 Annotation = Input.Annotation
             };
 
-            var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto, identity);
+            var created = await _detectiveService.CreateExpenseAsync(Input.CaseId, dto, identity, submitForApproval);
             return RedirectToPage("Details", new { id = created.Id });
         }
         catch (EntityNotFoundException ex)
@@ -105,4 +108,3 @@ public class CreateExpenseInputModel
     public decimal Amount { get; set; }
     public string? Annotation { get; set; }
 }
-

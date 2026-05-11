@@ -1,0 +1,72 @@
+@page "{id:int}"
+@model CaseFlow.PAGES.Pages.Detective.Evidence.EditModel
+@using CaseFlow.DAL.Enums
+@{
+    ViewData["Title"] = "Редагувати доказ";
+}
+
+<h2>Редагувати доказ</h2>
+<p class="text-muted small mb-3">
+    Після збереження статус знову стане чернеткою; потім можна надіслати запис на перевірку зі списку доказів.
+</p>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach (var modelState in ViewData.ModelState.Values)
+        {
+            @foreach (var error in modelState.Errors)
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Type" class="form-label">Тип</label>
+                <select asp-for="Input.Type" class="form-select" asp-items="Html.GetEnumSelectList<EvidenceType>()" required>
+                    <option value="">-- Оберіть тип --</option>
+                </select>
+                <span asp-validation-for="Input.Type" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Description" class="form-label">Опис</label>
+                <textarea asp-for="Input.Description" class="form-control" rows="3" required></textarea>
+                <span asp-validation-for="Input.Description" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.CollectionDate" class="form-label">Дата збору</label>
+                <input asp-for="Input.CollectionDate" asp-format="{0:yyyy-MM-ddTHH:mm}" class="form-control" type="datetime-local" step="60" required max="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="Input.CollectionDate" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Region" class="form-label">Регіон</label>
+                <input asp-for="Input.Region" class="form-control" />
+                <span asp-validation-for="Input.Region" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Input.Annotation" class="form-label">Анотація</label>
+                <textarea asp-for="Input.Annotation" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Annotation" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Purpose" class="form-label">Мета</label>
+                <textarea asp-for="Input.Purpose" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Purpose" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Зберегти</button>
+    <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Скасувати</a>
+    <a asp-page="Index" class="btn btn-link">До списку</a>
+</form>
+
+<partial name="~/Pages/Shared/_ValidationScriptsPartial.cshtml" />

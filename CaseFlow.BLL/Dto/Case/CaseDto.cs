@@ -12,12 +12,10 @@ public class CaseDto
     public DateOnly? CloseDate { get; set; }
     public CaseStatus Status { get; set; }
     
-    // Foreign key IDs
     public int CaseTypeId { get; set; }
     public int ClientId { get; set; }
     public int? DetectiveId { get; set; }
     
-    // Human-readable names
     public string CaseTypeName { get; set; } = null!;
     public string ClientFullName { get; set; } = null!;
     public string? DetectiveFullName { get; set; }

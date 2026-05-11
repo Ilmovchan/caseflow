@@ -29,7 +29,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        // Get all suspects first
         List<Suspect> allSuspects;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -42,7 +41,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allSuspects = allResult.Items;
         }
 
-        // Admin sees all statuses, including Draft.
         var totalCount = allSuspects.Count;
         var items = allSuspects
             .OrderBy(s => s.Id)
@@ -60,7 +58,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 
         AllSuspects = PagedSuspects.Items;
 
-        // Get pending suspects for approval section
         var pendingSuspectEntities = await _adminService.GetPendingSuspectsAsync();
         PendingSuspects = _mapper.Map<List<SuspectDto>>(pendingSuspectEntities);
     }
@@ -121,7 +118,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatusColor = "warning",
                 approvalStatus = "Pending",
                 message = "Підозрюваний надіслано на перевірку!",
-                // keep response lightweight (frontend only needs status fields)
             });
         }
         catch (Exception ex)

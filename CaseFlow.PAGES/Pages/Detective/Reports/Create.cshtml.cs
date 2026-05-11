@@ -34,10 +34,19 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
         }).ToList();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostSubmitAsync() =>
+        CreateReportInternalAsync(submitForApproval: true);
+
+    public Task<IActionResult> OnPostDraftAsync() =>
+        CreateReportInternalAsync(submitForApproval: false);
+
+    private async Task<IActionResult> CreateReportInternalAsync(bool submitForApproval)
     {
         if (!ModelState.IsValid)
+        {
+            await OnGetAsync();
             return Page();
+        }
 
         try
         {
@@ -51,7 +60,7 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 Comments = Input.Comments
             };
 
-            var created = await _detectiveService.CreateReportAsync(Input.CaseId, dto, identity);
+            var created = await _detectiveService.CreateReportAsync(Input.CaseId, dto, identity, submitForApproval);
             return RedirectToPage("Details", new { id = created.Id });
         }
         catch (EntityNotFoundException ex)
@@ -89,4 +98,3 @@ public class CreateReportInputModel
     public string Summary { get; set; } = null!;
     public string? Comments { get; set; }
 }
-

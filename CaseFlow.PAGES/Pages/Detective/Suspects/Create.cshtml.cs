@@ -1,4 +1,3 @@
-using CaseFlow.BLL.Dto.Case;
 using CaseFlow.BLL.Dto.Suspect;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
@@ -17,30 +16,18 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
     [BindProperty]
     public CreateSuspectInputModel Input { get; set; } = new();
 
-    public List<CaseDto> Cases { get; set; } = new();
+    public Task OnGetAsync() => Task.CompletedTask;
 
-    public async Task OnGetAsync()
-    {
-        var identity = DetectiveIdentity.FromUser(User);
-        var cases = string.IsNullOrEmpty(identity)
-            ? []
-            : await _detectiveService.GetCasesByDetectiveEmailAsync(identity);
-        Cases = cases.Select(c => new CaseDto
-        {
-            Id = c.Id,
-            Title = c.Title,
-            ClientFullName = c.Client?.FirstName + " " + c.Client?.LastName ?? "Unknown",
-            CaseTypeName = c.CaseType?.Name ?? "Unknown"
-        }).ToList();
-    }
+    public Task<IActionResult> OnPostSubmitAsync() =>
+        CreateSuspectInternalAsync(submitForApproval: true);
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostDraftAsync() =>
+        CreateSuspectInternalAsync(submitForApproval: false);
+
+    private async Task<IActionResult> CreateSuspectInternalAsync(bool submitForApproval)
     {
         if (!ModelState.IsValid)
-        {
-            await OnGetAsync();
             return Page();
-        }
 
         try
         {
@@ -67,13 +54,18 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
                 PriorConvictions = Input.PriorConvictions
             };
 
-            var created = await _detectiveService.CreateSuspectAsync(Input.CaseId, dto, identity);
+            var created = await _detectiveService.CreateSuspectAsync(dto, identity, submitForApproval);
             return RedirectToPage("Details", new { id = created.Id });
+        }
+        catch (SuspectValidationException ex)
+        {
+            foreach (var (prop, msg) in ex.Errors)
+                ModelState.AddModelError($"Input.{prop}", msg);
+            return Page();
         }
         catch (EntityNotFoundException ex)
         {
-            ModelState.AddModelError(string.Empty, $"Справа не знайдена: {ex.Message}");
-            await OnGetAsync();
+            ModelState.AddModelError(string.Empty, $"Не вдалося створити підозрюваного: {ex.Message}");
             return Page();
         }
         catch (Exception ex)
@@ -82,12 +74,10 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
             if (constraintViolation != null)
             {
                 ModelState.AddModelError(string.Empty, constraintViolation.UserFriendlyMessage);
-                await OnGetAsync();
                 return Page();
             }
 
             ModelState.AddModelError(string.Empty, "Помилка при створенні підозрюваного. Спробуйте ще раз.");
-            await OnGetAsync();
             return Page();
         }
     }
@@ -95,7 +85,6 @@ public class CreateModel(DetectiveService detectiveService) : PageModel
 
 public class CreateSuspectInputModel
 {
-    public int CaseId { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? FatherName { get; set; }
@@ -112,5 +101,3 @@ public class CreateSuspectInputModel
     public string? PhysicalDescription { get; set; }
     public string? PriorConvictions { get; set; }
 }
-
-

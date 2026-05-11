@@ -22,7 +22,6 @@ public class DetailsModel(AdminService adminService) : PageModel
         if (entity == null) return NotFound();
         Case = entity;
 
-        // In case details, hide drafts and show only submitted/processed entities.
         Evidences = (await _adminService.GetEvidencesFromCaseAsync(id))
             .Where(e => e.ApprovalStatus != ApprovalStatus.Draft)
             .ToList();

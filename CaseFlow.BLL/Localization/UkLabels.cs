@@ -2,7 +2,6 @@ using CaseFlow.DAL.Enums;
 
 namespace CaseFlow.BLL.Localization;
 
-/// <summary>Ukrainian UI strings for enums stored as PostgreSQL enum labels.</summary>
 public static class UkLabels
 {
     public static string CaseStatusLabel(CaseStatus s) => s switch

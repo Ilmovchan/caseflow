@@ -7,7 +7,6 @@ public class IndexModel : PageModel
 {
     public IActionResult OnGet()
     {
-        // If user is already authenticated, redirect to appropriate dashboard
         if (User.Identity?.IsAuthenticated == true)
         {
             if (User.IsInRole("Admin"))
@@ -20,7 +19,6 @@ public class IndexModel : PageModel
             }
         }
         
-        // Redirect unauthenticated users to login
         return RedirectToPage("/Auth/Login");
     }
 }

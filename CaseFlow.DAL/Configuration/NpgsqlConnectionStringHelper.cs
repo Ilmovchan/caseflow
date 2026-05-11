@@ -2,10 +2,7 @@ using Npgsql;
 
 namespace CaseFlow.DAL.Configuration;
 
-/// <summary>
-/// Optional overrides so you do not store real passwords in appsettings.
-/// Set <c>CASEFLOW_POSTGRES_PASSWORD</c> (and optionally <c>CASEFLOW_POSTGRES_USER</c>) in the environment or launch profile.
-/// </summary>
+/// <summary>Підстановка логіна/пароля з змінних середовища (див. CASEFLOW_POSTGRES_*).</summary>
 public static class NpgsqlConnectionStringHelper
 {
     public const string EnvPassword = "CASEFLOW_POSTGRES_PASSWORD";

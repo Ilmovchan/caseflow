@@ -1,6 +1,7 @@
 using CaseFlow.BLL.Dto.Report;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
+using CaseFlow.DAL.Enums;
 using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +29,10 @@ public class EditModel(DetectiveService detectiveService) : PageModel
             return Unauthorized();
         var entity = await _detectiveService.GetReportAsync(id, identity);
         if (entity == null) return NotFound();
+
+        var status = entity.ApprovalStatus ?? ApprovalStatus.Draft;
+        if (status is not ApprovalStatus.Draft and not ApprovalStatus.Declined)
+            return RedirectToPage("Details", new { id });
 
         Id = entity.Id;
         Input = new UpdateReportDto

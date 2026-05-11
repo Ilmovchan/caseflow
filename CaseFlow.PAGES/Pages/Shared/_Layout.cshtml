@@ -31,7 +31,7 @@
 
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1 align-items-center">
-                    <!-- Главная -->
+                    
                     <li class="nav-item">
                         <a class="nav-link @(currentPage == "/Index" ? "active" : "")" asp-area="" asp-page="/Index">
                             <i class="fas fa-home me-1"></i>Головна
@@ -42,7 +42,7 @@
                     {
                         @if (User.IsInRole("Admin"))
                         {
-                            <!-- Панель адміністратора -->
+                            
                             <li class="nav-item">
                                 <a class="nav-link @(currentPage.StartsWith("/Admin/Index") ? "active" : "")"
                                    asp-area="" asp-page="/Admin/Index">
@@ -50,7 +50,7 @@
                                 </a>
                             </li>
 
-                            <!-- Клієнти — показывается только в разделе Clients -->
+                            
                             @if (currentPage.StartsWith("/Admin/Clients"))
                             {
                                 <li class="nav-item">
@@ -61,7 +61,7 @@
                                 </li>
                             }
                             
-                            <!-- Детективи — показывается только в разделе Detectives -->
+                            
                             @if (currentPage.StartsWith("/Admin/Detectives"))
                             {
                                 <li class="nav-item">
@@ -72,7 +72,7 @@
                                 </li>
                             }
 
-                            <!-- Справи — показывается только в разделе Cases -->
+                            
                             @if (currentPage.StartsWith("/Admin/Cases"))
                             {
                                 <li class="nav-item">
@@ -83,7 +83,7 @@
                                 </li>
                             }
 
-                            <!-- Докази — показывается только в разделе Evidence -->
+                            
                             @if (currentPage.StartsWith("/Admin/Evidence"))
                             {
                                 <li class="nav-item">
@@ -94,7 +94,7 @@
                                 </li>
                             }
 
-                            <!-- Звіти — показывается только в разделе Reports -->
+                            
                             @if (currentPage.StartsWith("/Admin/Reports"))
                             {
                                 <li class="nav-item">
@@ -105,7 +105,7 @@
                                 </li>
                             }
 
-                            <!-- Витрати — показывается только в разделе Expenses -->
+                            
                             @if (currentPage.StartsWith("/Admin/Expenses"))
                             {
                                 <li class="nav-item">
@@ -116,7 +116,7 @@
                                 </li>
                             }
 
-                            <!-- Підозрювані — показывается только в разделе Suspects -->
+                            
                             @if (currentPage.StartsWith("/Admin/Suspects"))
                             {
                                 <li class="nav-item">
@@ -127,13 +127,23 @@
                                 </li>
                             }
 
-                            <!-- Типи справ — показывается только в разделе CaseTypes -->
+                            
                             @if (currentPage.StartsWith("/Admin/CaseTypes"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link active"
                                        asp-area="" asp-page="/Admin/CaseTypes/Index">
                                         <i class="fas fa-tags me-1"></i>Типи справ
+                                    </a>
+                                </li>
+                            }
+
+                            @if (currentPage.StartsWith("/Admin/SpecialQueries"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Admin/SpecialQueries/Index">
+                                        <i class="fas fa-database me-1"></i>Спеціальні виборки
                                     </a>
                                 </li>
                             }
@@ -148,7 +158,17 @@
                                 </a>
                             </li>
 
-                            <!-- Справи — показывается только в разделе Cases -->
+                            @if (currentPage.StartsWith("/Detective/SpecialQueries"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link active"
+                                       asp-area="" asp-page="/Detective/SpecialQueries/Index">
+                                        <i class="fas fa-database me-1"></i>Спеціальні виборки
+                                    </a>
+                                </li>
+                            }
+
+                            
                             @if (currentPage.StartsWith("/Detective/Cases"))
                             {
                                 <li class="nav-item">
@@ -169,7 +189,7 @@
                                 </li>
                             }
 
-                            <!-- Звіти — показывается только в разделе Reports -->
+                            
                             @if (currentPage.StartsWith("/Detective/Reports"))
                             {
                                 <li class="nav-item">
@@ -180,7 +200,7 @@
                                 </li>
                             }
 
-                            <!-- Докази — показывается только в разделе Evidence -->
+                            
                             @if (currentPage.StartsWith("/Detective/Evidence"))
                             {
                                 <li class="nav-item">
@@ -191,7 +211,7 @@
                                 </li>
                             }
 
-                            <!-- Підозрювані — показывается только в разделе Suspects -->
+                            
                             @if (currentPage.StartsWith("/Detective/Suspects"))
                             {
                                 <li class="nav-item">
@@ -202,7 +222,7 @@
                                 </li>
                             }
 
-                            <!-- Витрати — показывается только в разделе Expenses -->
+                            
                             @if (currentPage.StartsWith("/Detective/Expenses"))
                             {
                                 <li class="nav-item">
@@ -226,7 +246,7 @@
                     }
                 </ul>
 
-                <!-- Профиль / Вход -->
+                
                 <ul class="navbar-nav">
                     @if (User.Identity?.IsAuthenticated == true)
                     {

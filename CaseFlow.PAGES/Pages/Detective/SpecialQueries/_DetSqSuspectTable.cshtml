@@ -1,0 +1,35 @@
+@model List<CaseFlow.BLL.Dto.Suspect.SuspectDto>
+@if (Model == null || Model.Count == 0)
+{
+    <p class="text-muted small mb-0">Нічого не знайдено.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>ПІБ</th>
+                <th>Зріст</th>
+                <th>Вага</th>
+                <th>Місто</th>
+                <th>Регіон</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model)
+            {
+                <tr class="clickable-row" data-href="@Url.Page("/Detective/Suspects/Details", new { id = s.Id })">
+                    <td>@s.Id</td>
+                    <td>@(s.FullName ?? "—")</td>
+                    <td>@(s.Height?.ToString() ?? "—")</td>
+                    <td>@(s.Weight?.ToString() ?? "—")</td>
+                    <td>@(s.City ?? "—")</td>
+                    <td>@(s.Region ?? "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

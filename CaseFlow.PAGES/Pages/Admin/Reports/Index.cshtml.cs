@@ -29,7 +29,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        // Get all reports first
         List<Report> allReports;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -42,7 +41,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allReports = allResult.Items;
         }
 
-        // Admin sees all statuses, including Draft.
         var totalCount = allReports.Count;
         var items = allReports
             .OrderBy(r => r.Id)
@@ -60,7 +58,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 
         AllReports = PagedReports.Items;
 
-        // Get pending reports for approval section
         var pendingReportEntities = await _adminService.GetPendingReportsAsync();
         PendingReports = _mapper.Map<List<ReportDto>>(pendingReportEntities);
     }
@@ -121,7 +118,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatusColor = "warning",
                 approvalStatus = "Pending",
                 message = "Звіт надіслано на перевірку!",
-                // keep response lightweight (frontend only needs status fields)
             });
         }
         catch (Exception ex)
@@ -182,8 +178,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         
         for (int i = 1; i <= 50; i++)
         {
-            var reportDate = DateTime.Now.AddDays(-random.Next(1, 90)); // Last 3 months
-            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
+            var reportDate = DateTime.Now.AddDays(-random.Next(1, 90));            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
             
             sampleReports.Add(new ReportDto
             {

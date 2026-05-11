@@ -1,5 +1,6 @@
 @page "{id:int}"
 @model CaseFlow.PAGES.Pages.Detective.Reports.DetailsModel
+@using CaseFlow.DAL.Enums
 @{
     ViewData["Title"] = "Деталі звіту";
 }
@@ -26,20 +27,14 @@
 </dl>
 
 <div class="mt-4">
-    @if (Model.Report.ApprovalStatus.ToString() == "Draft")
+    @if (Model.Report.ApprovalStatus == ApprovalStatus.Draft)
     {
         <button type="button" class="btn btn-success" id="submit-btn" data-id="@Model.Report.Id">
             <i class="fas fa-paper-plane"></i> Надіслати на перевірку
         </button>
     }
-    else if (Model.Report.ApprovalStatus.ToString() == "Declined")
-    {
-        <button type="button" class="btn btn-warning" id="resubmit-btn" data-id="@Model.Report.Id">
-            <i class="fas fa-redo"></i> Надіслати знову
-        </button>
-    }
 
-    @if (Model.Report.ApprovalStatus.ToString() != "Approved")
+    @if (Model.Report.ApprovalStatus is ApprovalStatus.Draft or ApprovalStatus.Declined)
     {
         <a asp-page="Edit" asp-route-id="@Model.Report.Id" class="btn btn-primary">Редагувати</a>
     }
@@ -50,16 +45,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('submit-btn');
-    const resubmitBtn = document.getElementById('resubmit-btn');
 
     if (submitBtn) {
         submitBtn.addEventListener('click', function() {
-            submitReport(this.getAttribute('data-id'));
-        });
-    }
-
-    if (resubmitBtn) {
-        resubmitBtn.addEventListener('click', function() {
             submitReport(this.getAttribute('data-id'));
         });
     }
@@ -86,9 +74,7 @@ async function submitReport(id) {
 
             // Hide submit buttons
             const submitBtn = document.getElementById('submit-btn');
-            const resubmitBtn = document.getElementById('resubmit-btn');
             if (submitBtn) submitBtn.style.display = 'none';
-            if (resubmitBtn) resubmitBtn.style.display = 'none';
 
             // Show success message using the global notification function
             if (typeof showNotification === 'function') {

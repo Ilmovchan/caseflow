@@ -1,0 +1,177 @@
+@page
+@model CaseFlow.PAGES.Pages.Detective.SpecialQueries.IndexModel
+@{
+    ViewData["Title"] = "Спеціальні виборки";
+}
+
+@if (!string.IsNullOrEmpty(Model.FlashSuccess))
+{
+    <div class="alert alert-success py-2 small">@Model.FlashSuccess</div>
+}
+@if (!string.IsNullOrEmpty(Model.FlashError))
+{
+    <div class="alert alert-danger py-2 small">@Model.FlashError</div>
+}
+
+<div class="accordion mt-2" id="det-sq-acc">
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d2">Закрити справу</button>
+        </h2>
+        <div id="d2" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="CloseCase" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID справи</label><input type="number" name="caseId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Закрити</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d16">Справи за типом</button>
+        </h2>
+        <div id="d16" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                @if (Model.CaseTypeOptions.Count == 0)
+                {
+                    <p class="text-muted small mb-0">У ваших справах немає типів для фільтра.</p>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="CasesByType" class="row g-2 align-items-end mb-2">
+                        <div class="col-auto">
+                            <label class="form-label mb-0 small">Тип справи</label>
+                            <select name="caseTypeId" class="form-select form-select-sm" required>
+                                @foreach (var t in Model.CaseTypeOptions)
+                                {
+                                    <option value="@t.Id">@t.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                    </form>
+                }
+                @if (Model.CasesByTypeRows != null) { @await Html.PartialAsync("_DetSqCaseTable", Model.CasesByTypeRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d19">Незакриті справи</button>
+        </h2>
+        <div id="d19" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="Unclosed" class="mb-2"><button type="submit" class="btn btn-sm btn-primary">Показати</button></form>
+                @if (Model.UnclosedCasesRows != null) { @await Html.PartialAsync("_DetSqCaseTable", Model.UnclosedCasesRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d20">Підозрювані за зростом, вагою, описом</button>
+        </h2>
+        <div id="d20" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="Physical" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">Зріст від</label><input type="number" name="heightMin" class="form-control form-control-sm" min="0" /></div>
+                    <div class="col-auto"><label class="form-label mb-0 small">Зріст до</label><input type="number" name="heightMax" class="form-control form-control-sm" min="0" /></div>
+                    <div class="col-auto"><label class="form-label mb-0 small">Вага від</label><input type="number" name="weightMin" class="form-control form-control-sm" min="0" /></div>
+                    <div class="col-auto"><label class="form-label mb-0 small">Вага до</label><input type="number" name="weightMax" class="form-control form-control-sm" min="0" /></div>
+                    <div class="col-md-4"><label class="form-label mb-0 small">Фрагмент опису</label><input type="text" name="physicalDescriptionContains" class="form-control form-control-sm" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Пошук</button></div>
+                </form>
+                @if (Model.PhysicalRows != null) { @await Html.PartialAsync("_DetSqSuspectTable", Model.PhysicalRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d22">Останній звіт по справі</button>
+        </h2>
+        <div id="d22" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="LatestReport" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID справи</label><input type="number" name="caseId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.LatestReportRow != null)
+                {
+                    var r = Model.LatestReportRow;
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-3">Звіт</dt><dd class="col-sm-9"><a asp-page="/Detective/Reports/Details" asp-route-id="@r.Id">#@r.Id</a></dd>
+                        <dt class="col-sm-3">Справа</dt><dd class="col-sm-9">@r.CaseId — @r.CaseTitle</dd>
+                        <dt class="col-sm-3">Дата</dt><dd class="col-sm-9">@r.ReportDate</dd>
+                        <dt class="col-sm-3">Резюме</dt><dd class="col-sm-9">@r.Summary</dd>
+                        <dt class="col-sm-3">Коментарі</dt><dd class="col-sm-9">@(r.Comments ?? "—")</dd>
+                    </dl>
+                }
+                else if (Model.ShowLatestReportEmpty)
+                {
+                    <p class="text-muted small mb-0">Звітів по цій справі немає.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d23">Підозрювані за містом або регіоном</button>
+        </h2>
+        <div id="d23" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="Location" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">Місто</label><input type="text" name="city" class="form-control form-control-sm" /></div>
+                    <div class="col-auto"><label class="form-label mb-0 small">Регіон</label><input type="text" name="region" class="form-control form-control-sm" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Пошук</button></div>
+                </form>
+                @if (Model.LocationRows != null) { @await Html.PartialAsync("_DetSqSuspectTable", Model.LocationRows) }
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#d24">Справи за підозрюваним</button>
+        </h2>
+        <div id="d24" class="accordion-collapse collapse" data-bs-parent="#det-sq-acc">
+            <div class="accordion-body">
+                <form method="post" asp-page-handler="SuspectCases" class="row g-2 align-items-end mb-2">
+                    <div class="col-auto"><label class="form-label mb-0 small">ID підозрюваного</label><input type="number" name="suspectId" class="form-control form-control-sm" required min="1" /></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Показати</button></div>
+                </form>
+                @if (Model.SuspectCasesRows != null)
+                {
+                    @if (Model.SuspectCasesRows.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">Немає справ або підозрюваного недоступно.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead><tr><th>ID</th><th>Назва</th><th>Статус</th></tr></thead>
+                                <tbody>
+                                @foreach (var row in Model.SuspectCasesRows)
+                                {
+                                    <tr class="clickable-row" data-href="@Url.Page("/Detective/Cases/Details", new { id = row.CaseId })">
+                                        <td>@row.CaseId</td>
+                                        <td>@row.Title</td>
+                                        <td>@UkLabels.CaseStatusLabel(row.Status)</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

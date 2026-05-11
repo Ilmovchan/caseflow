@@ -20,6 +20,8 @@
     <a asp-page="Create" class="btn btn-primary">Створити новий звіт</a>
 </div>
 
+<p class="text-muted small mb-3">Показано звіти лише по справах, до яких у вас є доступ як виконавцю.</p>
+
 <table id="reports-table" class="table sortable-table paginated-table">
     <thead>
     <tr>
@@ -47,6 +49,9 @@
             <td class="approval-actions">
                 @if (r.ApprovalStatus.ToString() == "Draft")
                 {
+                    <a asp-page="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();" title="Редагувати">
+                        <i class="fas fa-edit"></i>
+                    </a>
                     <button class="btn btn-sm btn-approve" data-id="@r.Id" data-type="report" title="Надіслати на перевірку">
                         <i class="fas fa-check" style="color: #0dcaf0;"></i>
                     </button>
@@ -56,6 +61,9 @@
                 }
                 else if (r.ApprovalStatus.ToString() == "Declined")
                 {
+                    <a asp-page="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();" title="Редагувати">
+                        <i class="fas fa-edit"></i>
+                    </a>
                     <span class="text-muted">Відхилено</span>
                 }
                 else if (r.ApprovalStatus.ToString() == "Approved")
@@ -72,7 +80,7 @@
     </tbody>
 </table>
 
-<!-- Server-side Pagination -->
+
 @if (Model.PagedReports.TotalPages > 1)
 {
     <nav aria-label="Reports pagination" class="mt-3">

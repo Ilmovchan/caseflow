@@ -1,6 +1,7 @@
 using CaseFlow.BLL.Dto.Expense;
 using CaseFlow.BLL.Exceptions;
 using CaseFlow.BLL.Services;
+using CaseFlow.DAL.Enums;
 using CaseFlow.PAGES.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,10 @@ public class EditModel(DetectiveService detectiveService) : PageModel
         var entity = await _detectiveService.GetExpenseAsync(id, identity);
         if (entity == null) return NotFound();
 
+        var status = entity.ApprovalStatus ?? ApprovalStatus.Draft;
+        if (status is not ApprovalStatus.Draft and not ApprovalStatus.Declined)
+            return RedirectToPage("Details", new { id });
+
         Id = entity.Id;
         Input = new UpdateExpenseInputModel
         {
@@ -52,7 +57,6 @@ public class EditModel(DetectiveService detectiveService) : PageModel
             if (string.IsNullOrEmpty(identity))
                 return Unauthorized();
 
-            // Convert local datetime to UTC
             var utcDateTime = Input.DateTime.Kind == DateTimeKind.Local
                 ? Input.DateTime.ToUniversalTime()
                 : Input.DateTime;

@@ -29,7 +29,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
     {
         CurrentPage = pageNumber;
 
-        // Get all expenses first
         List<Expense> allExpenses;
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -42,7 +41,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
             allExpenses = allResult.Items;
         }
 
-        // Admin sees all statuses, including Draft.
         var totalCount = allExpenses.Count;
         var items = allExpenses
             .OrderBy(e => e.Id)
@@ -60,7 +58,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
 
         AllExpenses = PagedExpenses.Items;
 
-        // Get pending expenses for approval section
         var pendingExpenseEntities = await _adminService.GetPendingExpensesAsync();
         PendingExpenses = _mapper.Map<List<ExpenseDto>>(pendingExpenseEntities);
     }
@@ -121,7 +118,6 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
                 newStatusColor = "warning",
                 approvalStatus = "Pending",
                 message = "Видатки надіслано на перевірку!",
-                // keep response lightweight (frontend only needs status fields)
             });
         }
         catch (Exception ex)
@@ -180,9 +176,7 @@ public class IndexModel(AdminService adminService, IMapper mapper) : PageModel
         
         for (int i = 1; i <= 40; i++)
         {
-            var expenseDate = DateTime.Now.AddDays(-random.Next(1, 180)); // Last 6 months
-            var amount = random.Next(100, 10000); // 100-10000 грн
-            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
+            var expenseDate = DateTime.Now.AddDays(-random.Next(1, 180));            var amount = random.Next(100, 10000);            var approvalStatus = approvalStatuses[random.Next(approvalStatuses.Length)];
             
             sampleExpenses.Add(new ExpenseDto
             {

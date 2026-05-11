@@ -6,6 +6,9 @@
 }
 
 <h2>Створити доказ</h2>
+<p class="text-muted small mb-3">
+    Справа не обирається під час створення: після схвалення адміністратором доказ можна прив’язати до справи на сторінці справи.
+</p>
 
 @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
 {
@@ -24,17 +27,6 @@
 <form method="post">
     <div class="row">
         <div class="col-md-6">
-            <div class="mb-3">
-                <label asp-for="Input.CaseId" class="form-label">Справа</label>
-                <select asp-for="Input.CaseId" class="form-select" required>
-                    <option value="">-- Оберіть справу --</option>
-                    @foreach (var caseItem in Model.Cases)
-                    {
-                        <option value="@caseItem.Id">@caseItem.Title (ID: @caseItem.Id)</option>
-                    }
-                </select>
-                <span asp-validation-for="Input.CaseId" class="text-danger"></span>
-            </div>
             <div class="mb-3">
                 <label asp-for="Input.Type" class="form-label">Тип</label>
                 <select asp-for="Input.Type" class="form-select" asp-items="Html.GetEnumSelectList<EvidenceType>()" required>
@@ -71,7 +63,8 @@
             </div>
         </div>
     </div>
-    <button type="submit" class="btn btn-primary">Створити</button>
+    <button type="submit" asp-page-handler="Submit" class="btn btn-primary">Створити й подати на розгляд</button>
+    <button type="submit" asp-page-handler="Draft" class="btn btn-outline-secondary">Зберегти чернетку</button>
     <a asp-page="Index" class="btn btn-secondary">Скасувати</a>
 </form>
 

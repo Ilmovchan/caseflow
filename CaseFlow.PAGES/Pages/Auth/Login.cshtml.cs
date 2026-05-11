@@ -30,13 +30,22 @@ public class LoginModel : PageModel
     [BindProperty]
     public bool RememberMe { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnUrl { get; set; }
+
     public string ErrorMessage { get; set; } = string.Empty;
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGet()
     {
-        // If user is already authenticated, redirect to appropriate dashboard
         if (User.Identity?.IsAuthenticated == true)
         {
+            await HttpContext.Session.LoadAsync();
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString(PgSessionKeys.Password)))
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return Page();
+            }
+
             if (User.IsInRole("Admin"))
             {
                 return RedirectToPage("/Admin/Index");
@@ -73,7 +82,6 @@ public class LoginModel : PageModel
                 await HttpContext.Session.LoadAsync();
                 HttpContext.Session.SetString(PgSessionKeys.Password, Password);
 
-                // Create claims
                 var claims = new List<Claim>
                 {
                     new(ClaimTypes.Name, result.User.Username),
@@ -92,7 +100,9 @@ public class LoginModel : PageModel
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, 
                     new ClaimsPrincipal(claimsIdentity), authProperties);
 
-                // Redirect to appropriate dashboard
+                if (!string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
+                    return LocalRedirect(ReturnUrl);
+
                 if (result.User.Role == "Admin")
                 {
                     return RedirectToPage("/Admin/Index");

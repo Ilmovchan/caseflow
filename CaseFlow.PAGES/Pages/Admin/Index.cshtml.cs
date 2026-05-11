@@ -19,7 +19,6 @@ public class IndexModel(AdminService adminService) : PageModel
     {
         UserFullName = User.Identity?.Name ?? "Адміністратор";
         
-        // Get pending counts for badges
         var pendingEvidence = await _adminService.GetPendingEvidencesAsync();
         PendingEvidenceCount = pendingEvidence.Count;
         
