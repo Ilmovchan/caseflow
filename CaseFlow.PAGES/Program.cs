@@ -101,6 +101,16 @@ await using (var scope = app.Services.CreateAsyncScope())
                 logger.LogWarning(ex,
                     "Could not apply admin role grants (DB user may need superuser or table owner). Admin panel may return permission denied until grants are applied manually.");
             }
+
+            try
+            {
+                await ApplyRowLevelSecurityAsync(db);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Could not apply row level security (needs table owner / superuser).");
+            }
         }
     }
     catch (Exception ex)
@@ -181,7 +191,8 @@ static async Task ApplyDetectivePostgresLoginSchemaPatchAsync(DetectiveAgencyDbC
 
 /// <summary>
 /// Grants the <c>detective</c> group role access to agency tables so EF works when detectives connect with their
-/// own Npgsql login. Row-level filtering (e.g. only assigned cases) stays in application code (<see cref="CaseFlow.BLL.Services.DetectiveService"/>).
+/// own Npgsql login. Fine-grained row access for detectives is enforced in PostgreSQL via
+/// <see cref="ApplyRowLevelSecurityAsync"/> (RLS); <see cref="CaseFlow.BLL.Services.DetectiveService"/> keeps the same rules at the app layer.
 /// </summary>
 static async Task ApplyDetectiveRoleGrantsAsync(DetectiveAgencyDbContext dbContext)
 {
@@ -261,6 +272,505 @@ static async Task ApplyAdminRoleGrantsAsync(DetectiveAgencyDbContext dbContext)
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO admin;
         END
         $grant$;
+        """);
+}
+
+/// <summary>
+/// Enables PostgreSQL RLS so that sessions using <c>detective</c> membership only see rows tied to
+/// <c>detective.postgres_login = current_user</c>. Admins (<c>pg_has_role(..., 'admin', 'member')</c>) bypass row filters via policy.
+/// The migration connection (often table owner or superuser) is not restricted by RLS.
+/// </summary>
+static async Task ApplyRowLevelSecurityAsync(DetectiveAgencyDbContext dbContext)
+{
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        BEGIN;
+
+        DROP POLICY IF EXISTS case_rls_admin_all ON "case";
+        DROP POLICY IF EXISTS case_rls_detective_select ON "case";
+        DROP POLICY IF EXISTS case_rls_detective_update ON "case";
+        DROP POLICY IF EXISTS client_rls_admin_all ON client;
+        DROP POLICY IF EXISTS client_rls_detective_select ON client;
+        DROP POLICY IF EXISTS case_type_rls_admin_all ON case_type;
+        DROP POLICY IF EXISTS case_type_rls_detective_select ON case_type;
+        DROP POLICY IF EXISTS detective_rls_admin_all ON detective;
+        DROP POLICY IF EXISTS detective_rls_detective_select ON detective;
+        DROP POLICY IF EXISTS evidence_rls_admin_all ON evidence;
+        DROP POLICY IF EXISTS evidence_rls_detective_select ON evidence;
+        DROP POLICY IF EXISTS evidence_rls_detective_insert ON evidence;
+        DROP POLICY IF EXISTS evidence_rls_detective_update ON evidence;
+        DROP POLICY IF EXISTS evidence_rls_detective_delete ON evidence;
+        DROP POLICY IF EXISTS case_evidence_rls_admin_all ON case_evidence;
+        DROP POLICY IF EXISTS case_evidence_rls_detective_select ON case_evidence;
+        DROP POLICY IF EXISTS case_evidence_rls_detective_insert ON case_evidence;
+        DROP POLICY IF EXISTS case_evidence_rls_detective_delete ON case_evidence;
+        DROP POLICY IF EXISTS suspect_rls_admin_all ON suspect;
+        DROP POLICY IF EXISTS suspect_rls_detective_select ON suspect;
+        DROP POLICY IF EXISTS suspect_rls_detective_insert ON suspect;
+        DROP POLICY IF EXISTS suspect_rls_detective_update ON suspect;
+        DROP POLICY IF EXISTS suspect_rls_detective_delete ON suspect;
+        DROP POLICY IF EXISTS case_suspect_rls_admin_all ON case_suspect;
+        DROP POLICY IF EXISTS case_suspect_rls_detective_select ON case_suspect;
+        DROP POLICY IF EXISTS case_suspect_rls_detective_insert ON case_suspect;
+        DROP POLICY IF EXISTS case_suspect_rls_detective_delete ON case_suspect;
+        DROP POLICY IF EXISTS expense_rls_admin_all ON expense;
+        DROP POLICY IF EXISTS expense_rls_detective_select ON expense;
+        DROP POLICY IF EXISTS expense_rls_detective_insert ON expense;
+        DROP POLICY IF EXISTS expense_rls_detective_update ON expense;
+        DROP POLICY IF EXISTS expense_rls_detective_delete ON expense;
+        DROP POLICY IF EXISTS report_rls_admin_all ON report;
+        DROP POLICY IF EXISTS report_rls_detective_select ON report;
+        DROP POLICY IF EXISTS report_rls_detective_insert ON report;
+        DROP POLICY IF EXISTS report_rls_detective_update ON report;
+        DROP POLICY IF EXISTS report_rls_detective_delete ON report;
+
+        DROP FUNCTION IF EXISTS cf_current_detective_id();
+
+        CREATE FUNCTION cf_current_detective_id() RETURNS integer
+        LANGUAGE sql
+        STABLE
+        SET search_path = public
+        AS $fn$
+            SELECT d.id
+            FROM detective d
+            WHERE d.postgres_login IS NOT NULL
+              AND lower(d.postgres_login) = lower(current_user::text)
+            LIMIT 1;
+        $fn$;
+
+        GRANT EXECUTE ON FUNCTION cf_current_detective_id() TO admin;
+        GRANT EXECUTE ON FUNCTION cf_current_detective_id() TO detective;
+
+        ALTER TABLE "case" ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE client ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE case_type ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE detective ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE evidence ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE case_evidence ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE suspect ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE case_suspect ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE expense ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE report ENABLE ROW LEVEL SECURITY;
+
+        CREATE POLICY case_rls_admin_all ON "case"
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY case_rls_detective_select ON "case"
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY case_rls_detective_update ON "case"
+            FOR UPDATE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND detective_id = cf_current_detective_id()
+            )
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY client_rls_admin_all ON client
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY client_rls_detective_select ON client
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1
+                    FROM "case" c
+                    WHERE c.client_id = client.id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY case_type_rls_admin_all ON case_type
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY case_type_rls_detective_select ON case_type
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1
+                    FROM "case" c
+                    WHERE c.case_type_id = case_type.id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY detective_rls_admin_all ON detective
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY detective_rls_detective_select ON detective
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND postgres_login IS NOT NULL
+                AND lower(postgres_login) = lower(current_user::text)
+            );
+
+        CREATE POLICY evidence_rls_admin_all ON evidence
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY evidence_rls_detective_select ON evidence
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND (
+                    created_by_detective_id = cf_current_detective_id()
+                    OR approval_status = 'Схвалено'::approval_status
+                    OR EXISTS (
+                        SELECT 1
+                        FROM case_evidence ce
+                        JOIN "case" c ON c.id = ce.case_id
+                        WHERE ce.evidence_id = evidence.id
+                          AND c.detective_id = cf_current_detective_id()
+                    )
+                )
+            );
+
+        CREATE POLICY evidence_rls_detective_insert ON evidence
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY evidence_rls_detective_update ON evidence
+            FOR UPDATE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            )
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY evidence_rls_detective_delete ON evidence
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            );
+
+        CREATE POLICY case_evidence_rls_admin_all ON case_evidence
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY case_evidence_rls_detective_select ON case_evidence
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_evidence.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY case_evidence_rls_detective_insert ON case_evidence
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_evidence.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM evidence e
+                        WHERE e.id = case_evidence.evidence_id
+                          AND e.created_by_detective_id = cf_current_detective_id()
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM evidence e
+                        WHERE e.id = case_evidence.evidence_id
+                          AND e.approval_status = 'Схвалено'::approval_status
+                    )
+                )
+            );
+
+        CREATE POLICY case_evidence_rls_detective_delete ON case_evidence
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_evidence.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY suspect_rls_admin_all ON suspect
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY suspect_rls_detective_select ON suspect
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND (
+                    created_by_detective_id = cf_current_detective_id()
+                    OR approval_status = 'Схвалено'::approval_status
+                    OR EXISTS (
+                        SELECT 1
+                        FROM case_suspect cs
+                        JOIN "case" c ON c.id = cs.case_id
+                        WHERE cs.suspect_id = suspect.id
+                          AND c.detective_id = cf_current_detective_id()
+                    )
+                )
+            );
+
+        CREATE POLICY suspect_rls_detective_insert ON suspect
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY suspect_rls_detective_update ON suspect
+            FOR UPDATE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            )
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY suspect_rls_detective_delete ON suspect
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            );
+
+        CREATE POLICY case_suspect_rls_admin_all ON case_suspect
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY case_suspect_rls_detective_select ON case_suspect
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_suspect.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY case_suspect_rls_detective_insert ON case_suspect
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_suspect.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM suspect s
+                        WHERE s.id = case_suspect.suspect_id
+                          AND s.created_by_detective_id = cf_current_detective_id()
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM suspect s
+                        WHERE s.id = case_suspect.suspect_id
+                          AND s.approval_status = 'Схвалено'::approval_status
+                    )
+                )
+            );
+
+        CREATE POLICY case_suspect_rls_detective_delete ON case_suspect
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = case_suspect.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY expense_rls_admin_all ON expense
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY expense_rls_detective_select ON expense
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = expense.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY expense_rls_detective_insert ON expense
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = expense.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY expense_rls_detective_update ON expense
+            FOR UPDATE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = expense.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            )
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = expense.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY expense_rls_detective_delete ON expense
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = expense.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            );
+
+        CREATE POLICY report_rls_admin_all ON report
+            FOR ALL TO PUBLIC
+            USING (pg_has_role(current_user, 'admin', 'member'))
+            WITH CHECK (pg_has_role(current_user, 'admin', 'member'));
+
+        CREATE POLICY report_rls_detective_select ON report
+            FOR SELECT TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = report.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+            );
+
+        CREATE POLICY report_rls_detective_insert ON report
+            FOR INSERT TO PUBLIC
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = report.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY report_rls_detective_update ON report
+            FOR UPDATE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = report.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            )
+            WITH CHECK (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = report.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+            );
+
+        CREATE POLICY report_rls_detective_delete ON report
+            FOR DELETE TO PUBLIC
+            USING (
+                pg_has_role(current_user, 'detective', 'member')
+                AND EXISTS (
+                    SELECT 1 FROM "case" c
+                    WHERE c.id = report.case_id
+                      AND c.detective_id = cf_current_detective_id()
+                )
+                AND created_by_detective_id = cf_current_detective_id()
+                AND approval_status IN (
+                    'Чернетка'::approval_status,
+                    'Відхилено'::approval_status
+                )
+            );
+
+        COMMIT;
         """);
 }
 
